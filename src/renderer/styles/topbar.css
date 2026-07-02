@@ -1,0 +1,163 @@
+/* Top bar: brand cluster on the left; clock, market state, data-mode badge
+   and quote refresh on the right. All colors/radii/motion come from tokens. */
+
+.tb {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px 0 16px;
+  gap: 12px;
+  background: var(--surface-1);
+  min-width: 0;
+}
+
+/* ---- Brand ---- */
+
+.tb-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-1);
+}
+
+.tb-glyph {
+  display: flex;
+  color: var(--accent);
+}
+
+.tb-wordmark {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+
+.tb-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.tb-caption {
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Right cluster ---- */
+
+.tb-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.tb-clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tb-time {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.tb-market {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.tb-market-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-3);
+  flex-shrink: 0;
+  transition: background var(--t-med), box-shadow var(--t-med);
+}
+
+.tb-market.open {
+  color: var(--text-2);
+}
+
+.tb-market.open .tb-market-dot {
+  background: var(--up);
+  box-shadow: 0 0 6px var(--up);
+}
+
+/* ---- Data-mode badge ---- */
+
+.tb-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+}
+
+.tb-badge.live {
+  color: var(--up);
+  background: var(--up-soft);
+}
+
+.tb-badge.sample {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.tb-badge.none {
+  color: var(--text-3);
+  background: var(--surface-2);
+}
+
+/* ---- Refresh button ---- */
+
+/* Ghost button — matches the cp-refresh treatment in the panels */
+.tb-refresh {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.tb-refresh:hover {
+  background: var(--surface-3);
+  color: var(--text-1);
+  border-color: var(--border);
+}
+
+.tb-refresh svg.spin {
+  animation: tb-spin 0.8s linear infinite;
+}
+
+@keyframes tb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb-refresh svg.spin {
+    animation: none;
+    opacity: 0.55;
+  }
+}

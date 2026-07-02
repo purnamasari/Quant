@@ -1,0 +1,140 @@
+/* App-level reset, shell layout, and shared utilities. Component-specific
+   styles live in their own CSS files, imported by each component. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+a,
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---- Shell: topbar spanning full width, then 3 columns ---- */
+
+.app-shell {
+  display: grid;
+  height: 100vh;
+  grid-template-rows: 52px minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr) 348px;
+}
+
+.topbar-slot {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+
+.sidebar-slot {
+  border-right: 1px solid var(--border-subtle);
+  min-height: 0;
+  background: var(--surface-1);
+}
+
+.center-slot {
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.right-slot {
+  min-height: 0;
+}
+
+/* ---- Scrollbars ---- */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- Shared utilities ---- */
+
+/* Numeric text: always tabular so columns of prices align */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--surface-3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: qn-spin 0.8s linear infinite;
+}
+
+@keyframes qn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 50%,
+    var(--surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: qn-shimmer 1.4s infinite;
+  border-radius: var(--r-sm);
+}
+
+@keyframes qn-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+.error-boundary {
+  display: grid;
+  place-items: center;
+  height: 100vh;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-2);
+}

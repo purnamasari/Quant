@@ -1,0 +1,29 @@
+{
+  "name": "quant",
+  "productName": "Quant",
+  "version": "1.0.0",
+  "description": "Desktop ETF & stock watchlist terminal — holdings-driven news, earnings calendar, and annotated charts",
+  "main": "dist/main/main.js",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && electron .",
+    "smoke": "npm run build && electron . --smoke",
+    "smoke:modal": "npm run build && electron . --smoke --smoke-modal=SPY"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "electron": "^31.3.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.4.1",
+    "lightweight-charts": "^4.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

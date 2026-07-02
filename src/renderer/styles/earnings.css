@@ -1,0 +1,101 @@
+/* Right-column earnings calendar (ec-*). Shared cp-* scaffolding lives in
+   news.css (imported by components/center/shared.tsx). Tokens only. */
+
+.ec-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 8px;
+  border-radius: var(--r-sm);
+  transition: background var(--t-fast);
+}
+
+.ec-item:hover {
+  background: var(--surface-2);
+}
+
+.ec-item + .ec-item {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.ec-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Ticker button — opens the chart modal */
+.ec-sym {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
+
+.ec-sym:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ec-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* BMO / AMC session chip — icon + label, deliberately neutral so amber
+   stays reserved for the SAMPLE marker */
+.ec-session {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.7;
+}
+
+.ec-session svg {
+  color: var(--text-3);
+}
+
+.ec-sub {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ec-eps {
+  font-size: 10.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.ec-eps .num {
+  color: var(--text-2);
+}

@@ -1,0 +1,52 @@
+/* Quant design tokens — the single source of truth for the visual system.
+   Component CSS must use these variables; no raw hex values in components. */
+
+:root {
+  /* Surfaces (darkest -> lightest) */
+  --bg: #0a0e16;
+  --surface-1: #0f1522;
+  --surface-2: #151d2f;
+  --surface-3: #1b2438;
+  --border: #202b42;
+  --border-subtle: #182136;
+
+  /* Text */
+  --text-1: #e9eef8;
+  --text-2: #9aa6bd;
+  --text-3: #5d6a85;
+
+  /* Accent — used sparingly: focus, selection, primary actions, chart accents */
+  --accent: #4d7ef7;
+  --accent-strong: #6d95ff;
+  --accent-soft: rgba(77, 126, 247, 0.14);
+
+  /* Market semantics */
+  --up: #1fbf75;
+  --up-soft: rgba(31, 191, 117, 0.13);
+  --down: #f0435c;
+  --down-soft: rgba(240, 67, 92, 0.13);
+  --warn: #e8a33d;
+  --warn-soft: rgba(232, 163, 61, 0.14);
+
+  /* Typography */
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, system-ui,
+    sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
+
+  /* Radii — small for chips/inputs, medium for panels/cards, large for modal */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  /* Elevation */
+  --shadow-pop: 0 8px 24px rgba(2, 5, 12, 0.55);
+  --shadow-modal: 0 24px 64px rgba(2, 5, 12, 0.65);
+
+  /* Motion */
+  --t-fast: 120ms ease;
+  --t-med: 200ms ease;
+
+  /* Z-layers */
+  --z-dropdown: 40;
+  --z-modal: 100;
+}

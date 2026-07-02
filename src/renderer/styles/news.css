@@ -1,0 +1,433 @@
+/* Center news feed styles (nf-*) plus the shared center-panel scaffolding
+   (cp-*) used by BOTH the news feed and the earnings calendar. Imported by
+   components/center/shared.tsx so every consumer gets the cp-* classes.
+   Tokens only — no raw color/radius/shadow/motion values. */
+
+/* ---------------------------------------------------------------- */
+/* Shared panel scaffolding (cp-*)                                   */
+/* ---------------------------------------------------------------- */
+
+.cp-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.cp-chrome {
+  flex: none;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cp-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 16px 8px;
+}
+
+.cp-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cp-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  color: var(--text-1);
+}
+
+.cp-caption {
+  margin: 1px 0 0;
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cp-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.cp-updated {
+  font-size: 10px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.cp-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.cp-refresh:hover {
+  background: var(--surface-3);
+  color: var(--text-1);
+  border-color: var(--border);
+}
+
+.cp-refresh svg.is-spinning {
+  animation: qn-spin 0.9s linear infinite;
+}
+
+.cp-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 8px 16px;
+}
+
+/* Day group headers — sticky so the date context survives scrolling; a
+   hairline rule grounds them against the rows beneath. */
+.cp-day {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 8px 5px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.cp-day-count {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text-3);
+}
+
+/* ---- Small chips shared by both panels ---- */
+
+.cp-tag {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 1px 5px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.cp-via {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 10px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.cp-sample {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 1px 5px;
+  border-radius: var(--r-sm);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1.6;
+}
+
+/* ---- Empty / error states ---- */
+
+.cp-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.cp-state-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 3px;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+
+.cp-state.is-error .cp-state-icon {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.cp-state-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.cp-state-hint {
+  margin: 0;
+  max-width: 260px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.cp-retry {
+  margin-top: 7px;
+  padding: 4px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+
+.cp-retry:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+}
+
+/* ---- "Resolving ETF holdings…" caption above skeletons ---- */
+
+.cp-resolving {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px 2px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.cp-resolving .spinner {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}
+
+/* ---- Skeleton rows (shapes sized per panel variant) ---- */
+
+.cp-skel-list {
+  padding-top: 6px;
+}
+
+.cp-skel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 8px;
+}
+
+.cp-skel-row + .cp-skel-row {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.cp-skel-meta {
+  width: 34%;
+  height: 9px;
+}
+
+.cp-skel-line {
+  height: 11px;
+}
+
+.cp-skel-chips {
+  width: 112px;
+  height: 14px;
+}
+
+.cp-skel-split {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cp-skel-sym {
+  flex: none;
+  width: 42px;
+  height: 12px;
+}
+
+.cp-skel-chip {
+  flex: none;
+  width: 44px;
+  height: 14px;
+  margin-left: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-refresh svg.is-spinning {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* News feed specifics (nf-*)                                        */
+/* ---------------------------------------------------------------- */
+
+/* Filter chip rail — scrolls horizontally, scrollbar hidden */
+.nf-chips {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px 10px;
+  overflow-x: auto;
+}
+
+.nf-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.nf-chip {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 4px;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  color: var(--text-2);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.nf-chip:hover {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.nf-chip.is-active {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent-strong);
+}
+
+.nf-chip-tag {
+  padding: 0 3px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  color: var(--text-3);
+}
+
+.nf-chip.is-active .nf-chip-tag {
+  border-color: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* ---- Article rows ---- */
+
+.nf-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
+  border-radius: var(--r-sm);
+  transition: background var(--t-fast);
+}
+
+.nf-item:hover {
+  background: var(--surface-2);
+}
+
+.nf-item + .nf-item {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.nf-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nf-pub {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Timestamp hugs the right edge — a scannable column, terminal-style */
+.nf-time {
+  flex: none;
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.nf-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-1);
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
+
+.nf-title:hover {
+  color: var(--accent-strong);
+}
+
+.nf-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-top: 1px;
+}
