@@ -100,6 +100,7 @@ function makeAppPayload(targetDir) {
         version,
         description: pkg.description,
         main: pkg.main,
+        author: pkg.author,
         license: pkg.license,
       },
       null,
@@ -107,6 +108,7 @@ function makeAppPayload(targetDir) {
     ) + '\n',
   );
   if (existsSync(r('LICENSE'))) copyFileSync(r('LICENSE'), path.join(appDir, 'LICENSE'));
+  if (existsSync(r('AUTHORS.md'))) copyFileSync(r('AUTHORS.md'), path.join(appDir, 'AUTHORS.md'));
   return appDir;
 }
 
@@ -117,6 +119,8 @@ function copyRuntimeNotice(targetDir) {
     'Run this folder in place. Do not move the executable without the adjacent resources folder.',
     '',
     'Local LLM support is optional. Without QUANT_LLM_ENABLED=1, Quant AI uses its deterministic fallback memo.',
+    '',
+    'Original code by David Wong, username DavidWProject.',
     '',
   ].join('\n');
   writeFileSync(path.join(targetDir, 'README.txt'), readme);

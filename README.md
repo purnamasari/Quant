@@ -399,6 +399,10 @@ See `CONTRIBUTING.md`.
 
 See `SECURITY.md`.
 
+## Credits
+
+Original code by David Wong, username `DavidWProject`.
+
 ## License
 
 MIT. See `LICENSE`.

@@ -5,7 +5,7 @@
   "description": "Desktop ETF & stock watchlist terminal — holdings-driven news, earnings calendar, and annotated charts",
   "main": "dist/main/main.js",
   "license": "MIT",
-  "author": "",
+  "author": "David Wong (DavidWProject)",
   "homepage": "https://github.com/your-org/quant#readme",
   "repository": {
     "type": "git",
