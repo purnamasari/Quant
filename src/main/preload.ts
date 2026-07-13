@@ -10,6 +10,8 @@ import type {
   EarningsEvent,
   HoldingsResult,
   LlmSettings,
+  LlmSettingsInput,
+  LlmConnectionResult,
   MacroOverlayKey,
   MacroOverlaySeries,
   NewsItem,
@@ -63,8 +65,10 @@ const api: QuantApi = {
     ipcRenderer.invoke(IPC.quantJournalSave, entry),
   getLlmSettings: (): Promise<LlmSettings> =>
     ipcRenderer.invoke(IPC.llmSettingsGet),
-  saveLlmSettings: (settings: LlmSettings): Promise<LlmSettings> =>
+  saveLlmSettings: (settings: LlmSettingsInput): Promise<LlmSettings> =>
     ipcRenderer.invoke(IPC.llmSettingsSave, settings),
+  testLlmConnection: (settings: LlmSettingsInput): Promise<LlmConnectionResult> =>
+    ipcRenderer.invoke(IPC.llmConnectionTest, settings),
   getValuation: (symbol: string): Promise<ValuationSnapshot> =>
     ipcRenderer.invoke(IPC.valuationGet, symbol),
   scanSignals: (request?: SignalScanRequest): Promise<SignalScanResult> =>

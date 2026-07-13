@@ -2,6 +2,7 @@ import { useApp } from '../store';
 import { AnalysisLab } from './AnalysisLab';
 import { NewsFeed } from './NewsFeed';
 import { SignalBoard } from './SignalBoard';
+import { SettingsPanel } from './SettingsPanel';
 import '../styles/analysis.css';
 import '../styles/signals.css';
 
@@ -37,11 +38,21 @@ export function CenterTabs() {
         >
           Signal Board
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={state.centerTab === 'settings'}
+          className={state.centerTab === 'settings' ? 'ct-tab is-active' : 'ct-tab'}
+          onClick={() => actions.setCenterTab('settings')}
+        >
+          Settings
+        </button>
       </div>
       <div className="ct-panel">
         {state.centerTab === 'news' && <NewsFeed />}
         {state.centerTab === 'analysis' && <AnalysisLab />}
         {state.centerTab === 'signals' && <SignalBoard />}
+        {state.centerTab === 'settings' && <SettingsPanel />}
       </div>
     </div>
   );

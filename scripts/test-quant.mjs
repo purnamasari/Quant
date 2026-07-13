@@ -11,6 +11,7 @@ mkdirSync(tmp, { recursive: true });
 const outfile = path.join(tmp, 'quant.mjs');
 const signalsOutfile = path.join(tmp, 'signals.mjs');
 const harnessOutfile = path.join(tmp, 'harness.mjs');
+const llmOutfile = path.join(tmp, 'llm.mjs');
 
 await build({
   entryPoints: [path.join(root, 'src/shared/quant.ts')],
@@ -19,6 +20,16 @@ await build({
   format: 'esm',
   target: 'node20',
   outfile,
+  logLevel: 'silent',
+});
+
+await build({
+  entryPoints: [path.join(root, 'src/shared/llm.ts')],
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  target: 'node20',
+  outfile: llmOutfile,
   logLevel: 'silent',
 });
 
@@ -45,6 +56,7 @@ await build({
 const quant = await import(pathToFileURL(outfile).href);
 const signals = await import(pathToFileURL(signalsOutfile).href);
 const harness = await import(pathToFileURL(harnessOutfile).href);
+const llm = await import(pathToFileURL(llmOutfile).href);
 
 function candles(count = 90) {
   const out = [];
@@ -107,6 +119,10 @@ const signalScan = signals.detectStockSignals(candles(160));
 assert.ok(signalScan.metrics.lastClose > 0);
 assert.ok(Array.isArray(signalScan.signals));
 assert.ok(signalScan.signals.some((s) => s.kind === 'ma-alignment'));
+
+assert.equal(llm.providerDefinition('local').baseUrl, 'http://127.0.0.1:8080/v1');
+assert.equal(llm.providerDefinition('claude').requiresApiKey, true);
+assert.equal(llm.normalizeApiBaseUrl('https://api.openai.com/v1///'), 'https://api.openai.com/v1');
 
 rmSync(tmp, { recursive: true, force: true });
 console.log('quant tests ok');

@@ -12,7 +12,7 @@ import type {
   AddWatchlistResult,
   ChartRange,
   HoldingsResult,
-  LlmSettings,
+  LlmSettingsInput,
   MacroOverlayKey,
   PivotPoint,
   QuantJournalEntryInput,
@@ -23,7 +23,9 @@ import { CHART_RANGES } from '../shared/types';
 import { getChart } from './services/chart';
 import { getEarnings } from './services/earnings';
 import { getHoldings } from './services/holdings';
-import { getLlmSettings, saveLlmSettings } from './services/llmSettings';
+import { getLlmSettings, resolveTransientLlmSettings, saveLlmSettings } from './services/llmSettings';
+import { testLlmConnection } from './services/llmProvider';
+import { isLlmProvider } from '../shared/llm';
 import { getMacroOverlay } from './services/macro';
 import { getQuantInsights, saveQuantInsight } from './services/insightStore';
 import { getQuantJournal, saveQuantJournal } from './services/journalStore';
@@ -54,6 +56,8 @@ const MAX_PIVOTS = 12;
 const isSmoke = process.argv.includes('--smoke');
 const forceOnboarding =
   process.argv.includes('--onboarding') || process.argv.includes('--smoke-onboarding');
+const smokeOnboardingStepArg = process.argv.find((arg) => arg.startsWith('--smoke-onboarding-step='));
+const smokeOnboardingStep = smokeOnboardingStepArg?.slice('--smoke-onboarding-step='.length);
 const smokeModalArg = process.argv.find((arg) => arg.startsWith('--smoke-modal='));
 const smokeModalSymbol = smokeModalArg
   ? normalizeSymbol(smokeModalArg.slice('--smoke-modal='.length))
@@ -66,6 +70,8 @@ const smokeTabArg = process.argv.find((arg) => arg.startsWith('--smoke-tab='));
 const smokeTab = smokeTabArg?.slice('--smoke-tab='.length);
 const smokeChartModeArg = process.argv.find((arg) => arg.startsWith('--smoke-chart-mode='));
 const smokeChartMode = smokeChartModeArg?.slice('--smoke-chart-mode='.length);
+const smokeChartRangeArg = process.argv.find((arg) => arg.startsWith('--smoke-chart-range='));
+const smokeChartRange = smokeChartRangeArg?.slice('--smoke-chart-range='.length);
 
 // ---------------------------------------------------------------------------
 // Input validation helpers
@@ -311,13 +317,30 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC.llmSettingsSave, (_e, rawSettings: unknown) => {
     const s =
       rawSettings && typeof rawSettings === 'object'
-        ? (rawSettings as Partial<LlmSettings>)
+        ? (rawSettings as Partial<LlmSettingsInput>)
         : {};
     return saveLlmSettings({
       enabled: s.enabled === true,
-      baseUrl: typeof s.baseUrl === 'string' ? s.baseUrl : undefined,
-      model: typeof s.model === 'string' ? s.model : undefined,
+      provider: isLlmProvider(s.provider) ? s.provider : 'local',
+      baseUrl: typeof s.baseUrl === 'string' ? s.baseUrl : '',
+      model: typeof s.model === 'string' ? s.model : '',
+      apiKey: typeof s.apiKey === 'string' ? s.apiKey.slice(0, 1000) : undefined,
+      clearApiKey: s.clearApiKey === true,
     });
+  });
+
+  ipcMain.handle(IPC.llmConnectionTest, async (_e, rawSettings: unknown) => {
+    const s = rawSettings && typeof rawSettings === 'object'
+      ? (rawSettings as Partial<LlmSettingsInput>)
+      : {};
+    const input: LlmSettingsInput = {
+      enabled: s.enabled === true,
+      provider: isLlmProvider(s.provider) ? s.provider : 'local',
+      baseUrl: typeof s.baseUrl === 'string' ? s.baseUrl : '',
+      model: typeof s.model === 'string' ? s.model : '',
+      apiKey: typeof s.apiKey === 'string' ? s.apiKey.slice(0, 1000) : undefined,
+    };
+    return testLlmConnection(resolveTransientLlmSettings(input));
   });
 
   ipcMain.handle(IPC.valuationGet, async (_e, rawSymbol: unknown) => {
@@ -450,11 +473,17 @@ function createWindow(): void {
   if (smokeModalSymbol) query.smokeModal = smokeModalSymbol;
   if (smokeRail) query.smokeRail = smokeRail;
   if (smokeOverlays) query.smokeOverlays = smokeOverlays;
-  if (smokeTab === 'analysis' || smokeTab === 'news' || smokeTab === 'signals') query.smokeTab = smokeTab;
+  if (smokeTab === 'analysis' || smokeTab === 'news' || smokeTab === 'signals' || smokeTab === 'settings') query.smokeTab = smokeTab;
   if (smokeChartMode === 'grid' || smokeChartMode === 'single') {
     query.smokeChartMode = smokeChartMode;
   }
+  if (smokeChartRange === '1m' || smokeChartRange === '3m' || smokeChartRange === '1y') {
+    query.smokeChartRange = smokeChartRange;
+  }
   if (forceOnboarding) query.onboarding = '1';
+  if (smokeOnboardingStep === 'llm' || smokeOnboardingStep === 'tips') {
+    query.onboardingStep = smokeOnboardingStep;
+  }
   if (Object.keys(query).length) {
     void win.loadFile(indexPath, { query });
   } else {

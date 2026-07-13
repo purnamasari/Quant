@@ -2,6 +2,32 @@
 
 All notable changes to Quant are documented here.
 
+## [1.3.0] - 2026-07-13
+
+### Added
+
+- Added a dedicated Quant AI Settings tab for local llama.cpp, OpenAI, Google Gemini, xAI Grok, and Anthropic Claude.
+- Added editable provider endpoint and model settings plus a real connection test that verifies the selected endpoint, authentication, and model with a minimal completion.
+- Added OS-backed encrypted cloud API-key storage through Electron `safeStorage`; saved credentials are never returned to the renderer.
+- Reused the complete provider setup and connection-test interface in the first-run onboarding wizard.
+- Added a native Claude Messages adapter alongside the shared OpenAI-compatible adapter used by llama.cpp, OpenAI, Gemini, and Grok.
+- Added an explicit three-month chart range.
+
+### Fixed
+
+- Rebuilt each lightweight chart pane when the selected 1M, 3M, or 1Y period changes, preventing stale candlestick series from remaining visible across the multi-chart grid.
+- Propagated the selected period through live Yahoo data, macro-series windows, bundled sample data, and chart-history preloading.
+
+### Security
+
+- Cloud keys remain in the Electron main process and are encrypted before they are written to local app storage.
+- When secure OS credential encryption is unavailable, Quant refuses to persist a cloud API key in plaintext.
+
+### Testing
+
+- Added provider-default and URL-normalization coverage.
+- Verified type checking, Quant tests, production builds, Settings and onboarding smoke views, distinct 1M/1Y multi-chart renders, and a live llama.cpp completion.
+
 ## [1.2.1] - 2026-07-12
 
 ### Fixed

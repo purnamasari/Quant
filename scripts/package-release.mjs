@@ -16,6 +16,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -121,7 +122,7 @@ function copyRuntimeNotice(targetDir) {
     '',
     'Run this folder in place. Do not move the executable without the adjacent resources folder.',
     '',
-    'Local LLM support is optional. Without QUANT_LLM_ENABLED=1, Quant AI uses its deterministic fallback memo.',
+    'Quant AI is optional. Configure local llama.cpp or a cloud provider in Settings; otherwise Quant uses its deterministic fallback memo.',
     '',
     'Original code by David Wong, username DavidWProject.',
     '',
@@ -129,9 +130,21 @@ function copyRuntimeNotice(targetDir) {
   writeFileSync(path.join(targetDir, 'README.txt'), readme);
 }
 
+function removeFinderMetadata(targetDir) {
+  for (const entry of readdirSync(targetDir, { withFileTypes: true })) {
+    const entryPath = path.join(targetDir, entry.name);
+    if (entry.name === '.DS_Store' || entry.name.startsWith('._')) {
+      rmSync(entryPath, { recursive: true, force: true });
+    } else if (entry.isDirectory()) {
+      removeFinderMetadata(entryPath);
+    }
+  }
+}
+
 function createZipArchive(sourceDir, outPath) {
+  removeFinderMetadata(sourceDir);
   rmSync(outPath, { force: true });
-  execFileSync('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', sourceDir, outPath], {
+  execFileSync('zip', ['-q', '-r', '-y', '-X', outPath, path.basename(sourceDir)], {
     cwd: path.dirname(sourceDir),
     stdio: 'inherit',
   });

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import type { LlmSettings } from '../../shared/types';
 import { api } from '../api';
 import { useApp } from '../store';
+import { LlmSetupForm } from './LlmSetupForm';
 
 const ONBOARDING_KEY = 'quant.onboarding.completed.v1';
 
@@ -82,17 +82,14 @@ function TipCard({
 export function OnboardingWizard() {
   const { state, actions } = useApp();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>('preset');
+  const [step, setStep] = useState<Step>(() => {
+    const smokeStep = new URLSearchParams(window.location.search).get('onboardingStep');
+    return smokeStep === 'llm' || smokeStep === 'tips' ? smokeStep : 'preset';
+  });
   const [presetId, setPresetId] = useState(PRESETS[0].id);
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState<string[]>([]);
   const [applyError, setApplyError] = useState<string | null>(null);
-  const [llm, setLlm] = useState<LlmSettings>({
-    enabled: false,
-    baseUrl: 'http://127.0.0.1:8080',
-    model: 'gemma-4-e4b-it',
-  });
-  const [savingLlm, setSavingLlm] = useState(false);
 
   const selectedPreset = useMemo(
     () => PRESETS.find((preset) => preset.id === presetId) ?? PRESETS[0],
@@ -102,10 +99,6 @@ export function OnboardingWizard() {
   useEffect(() => {
     if (shouldHideForSmoke()) return;
     if (shouldForceOnboarding() || !readCompleted()) setOpen(true);
-  }, []);
-
-  useEffect(() => {
-    api.getLlmSettings().then(setLlm, () => undefined);
   }, []);
 
   if (!open) return null;
@@ -145,14 +138,6 @@ export function OnboardingWizard() {
     }
   };
 
-  const saveLlm = async () => {
-    setSavingLlm(true);
-    const saved = await api.saveLlmSettings(llm).catch(() => llm);
-    setLlm(saved);
-    setSavingLlm(false);
-    setStep('tips');
-  };
-
   return (
     <div className="ob-backdrop" role="presentation">
       <section className="ob-modal" role="dialog" aria-modal="true" aria-label="Quant onboarding">
@@ -161,7 +146,7 @@ export function OnboardingWizard() {
             <span className="ob-kicker">First run setup</span>
             <h2>Set up Quant in a few steps</h2>
             <p>
-              Choose a starter universe, decide whether Quant AI should call a local model,
+              Choose a starter universe, connect Quant AI to a local or cloud model,
               and learn the core reading pattern before the first chart.
             </p>
           </div>
@@ -240,51 +225,17 @@ export function OnboardingWizard() {
               <h3>Configure Quant AI</h3>
               <p>
                 Quant AI is optional. When disabled, the agent still returns a deterministic
-                memo from the signal engine. When enabled, Quant calls an OpenAI-compatible
-                local server for richer chart discussion.
+                memo from the signal engine. Use local llama.cpp for private inference or
+                provide an optional OpenAI, Gemini, Grok, or Claude API key.
               </p>
             </div>
-            <label className="ob-toggle">
-              <input
-                type="checkbox"
-                checked={llm.enabled}
-                onChange={(event) => setLlm((current) => ({ ...current, enabled: event.currentTarget.checked }))}
-              />
-              Enable local LLM calls
-            </label>
-            <div className="ob-form-grid">
-              <label>
-                <span>Server URL</span>
-                <input
-                  value={llm.baseUrl}
-                  onChange={(event) => setLlm((current) => ({ ...current, baseUrl: event.currentTarget.value }))}
-                  placeholder="http://127.0.0.1:8080"
-                />
-              </label>
-              <label>
-                <span>Model name</span>
-                <input
-                  value={llm.model}
-                  onChange={(event) => setLlm((current) => ({ ...current, model: event.currentTarget.value }))}
-                  placeholder="gemma-4-e4b-it"
-                />
-              </label>
-            </div>
-            <div className="ob-note">
-              <strong>Expected server shape</strong>
-              <span>
-                Quant checks <code>GET /health</code> and sends chat to{' '}
-                <code>POST /v1/chat/completions</code>. LM Studio, llama.cpp server,
-                Ollama OpenAI-compatible mode, or a small proxy can work if they expose
-                those routes.
-              </span>
-            </div>
+            <LlmSetupForm compact onSaved={() => setStep('tips')} />
             <div className="ob-actions">
               <button type="button" className="ob-secondary" onClick={() => setStep('preset')}>
                 Back
               </button>
-              <button type="button" className="ob-primary" disabled={savingLlm} onClick={saveLlm}>
-                {savingLlm ? 'Saving...' : 'Save Quant AI settings'}
+              <button type="button" className="ob-secondary" onClick={() => setStep('tips')}>
+                Skip Quant AI
               </button>
             </div>
           </div>

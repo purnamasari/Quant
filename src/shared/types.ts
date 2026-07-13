@@ -73,8 +73,8 @@ export interface EarningsEvent {
   source: DataSource;
 }
 
-export type ChartRange = '1d' | '1w' | '1m' | '6m' | '1y' | '5y' | 'max';
-export const CHART_RANGES: ChartRange[] = ['1d', '1w', '1m', '6m', '1y', '5y', 'max'];
+export type ChartRange = '1d' | '1w' | '1m' | '3m' | '6m' | '1y' | '5y' | 'max';
+export const CHART_RANGES: ChartRange[] = ['1d', '1w', '1m', '3m', '6m', '1y', '5y', 'max'];
 
 export interface Candle {
   time: number; // unix seconds, UTC
@@ -301,10 +301,32 @@ export interface QuantJournalEntry {
   };
 }
 
+export type LlmProvider = 'local' | 'openai' | 'gemini' | 'grok' | 'claude';
+
 export interface LlmSettings {
   enabled: boolean;
+  provider: LlmProvider;
   baseUrl: string;
   model: string;
+  hasApiKey: boolean;
+  credentialStorage: 'encrypted' | 'unavailable';
+}
+
+export interface LlmSettingsInput {
+  enabled: boolean;
+  provider: LlmProvider;
+  baseUrl: string;
+  model: string;
+  apiKey?: string;
+  clearApiKey?: boolean;
+}
+
+export interface LlmConnectionResult {
+  ok: boolean;
+  provider: LlmProvider;
+  model: string;
+  latencyMs: number;
+  message: string;
 }
 
 export interface ValuationSnapshot {
@@ -360,7 +382,8 @@ export interface QuantApi {
   getQuantJournal(symbol: string): Promise<QuantJournalEntry[]>;
   saveQuantJournal(entry: QuantJournalEntryInput): Promise<QuantJournalEntry>;
   getLlmSettings(): Promise<LlmSettings>;
-  saveLlmSettings(settings: LlmSettings): Promise<LlmSettings>;
+  saveLlmSettings(settings: LlmSettingsInput): Promise<LlmSettings>;
+  testLlmConnection(settings: LlmSettingsInput): Promise<LlmConnectionResult>;
   getValuation(symbol: string): Promise<ValuationSnapshot>;
   scanSignals(request?: SignalScanRequest): Promise<SignalScanResult>;
   openExternal(url: string): Promise<void>;

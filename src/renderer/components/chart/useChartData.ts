@@ -138,6 +138,8 @@ function nextLongerRange(range: ChartRange): ChartRange {
     case '1w':
       return '1m';
     case '1m':
+      return '3m';
+    case '3m':
       return '6m';
     case '6m':
       return '1y';

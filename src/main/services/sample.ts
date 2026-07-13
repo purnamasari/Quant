@@ -57,6 +57,7 @@ const SAMPLE_RANGE: Record<ChartRange, SampleRangeSpec> = {
   '1d': { interval: '5m', count: 78, kind: 'intraday', stepSec: 300, vol: 0.0012, baseVolume: 900_000 },
   '1w': { interval: '15m', count: 130, kind: 'intraday', stepSec: 900, vol: 0.002, baseVolume: 2_600_000 },
   '1m': { interval: '60m', count: 154, kind: 'intraday', stepSec: 3600, vol: 0.004, baseVolume: 9_000_000 },
+  '3m': { interval: '1d', count: 63, kind: 'daily', stepSec: 86_400, vol: 0.012, baseVolume: 55_000_000 },
   '6m': { interval: '1d', count: 126, kind: 'daily', stepSec: 86_400, vol: 0.012, baseVolume: 55_000_000 },
   '1y': { interval: '1d', count: 252, kind: 'daily', stepSec: 86_400, vol: 0.012, baseVolume: 55_000_000 },
   '5y': { interval: '1wk', count: 260, kind: 'weekly', stepSec: 7 * 86_400, vol: 0.028, baseVolume: 260_000_000 },

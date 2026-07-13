@@ -19,6 +19,7 @@ const RANGE_MAP: Record<ChartRange, RangeSpec> = {
   '1d': { yahooRange: '1d', interval: '5m', ttlMs: INTRADAY_TTL },
   '1w': { yahooRange: '5d', interval: '15m', ttlMs: INTRADAY_TTL },
   '1m': { yahooRange: '1mo', interval: '60m', ttlMs: INTRADAY_TTL },
+  '3m': { yahooRange: '3mo', interval: '1d', ttlMs: DAILY_TTL },
   '6m': { yahooRange: '6mo', interval: '1d', ttlMs: DAILY_TTL },
   '1y': { yahooRange: '1y', interval: '1d', ttlMs: DAILY_TTL },
   '5y': { yahooRange: '5y', interval: '1wk', ttlMs: DAILY_TTL },

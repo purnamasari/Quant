@@ -20,6 +20,7 @@ export const IPC = {
   quantJournalSave: 'quant:journal-save',
   llmSettingsGet: 'llm-settings:get',
   llmSettingsSave: 'llm-settings:save',
+  llmConnectionTest: 'llm-settings:test',
   valuationGet: 'valuation:get',
   signalsScan: 'signals:scan',
   openExternal: 'shell:open-external',

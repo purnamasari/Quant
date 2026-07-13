@@ -23,7 +23,7 @@ const C = {
   accent: '#4d7ef7',
 } as const;
 
-const RANGES: ChartRange[] = ['1d', '1m', '6m', '1y'];
+const RANGES: ChartRange[] = ['1m', '3m', '1y'];
 
 function pct(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'n/a';
@@ -188,7 +188,10 @@ export function MultiChartPanel({
       ? 'grid'
       : 'single',
   );
-  const [range, setRange] = useState<ChartRange>('1d');
+  const [range, setRange] = useState<ChartRange>(() => {
+    const smokeRange = new URLSearchParams(window.location.search).get('smokeChartRange');
+    return smokeRange === '3m' || smokeRange === '1y' ? smokeRange : '1m';
+  });
 
   const watchSymbols = useMemo(() => watchlist.map((item) => item.symbol), [watchlist]);
   const gridSymbols = useMemo(() => {
@@ -275,7 +278,7 @@ export function MultiChartPanel({
           </div>
           <div className="mc-single-canvas">
             {selectedChart ? (
-              <SimpleChart data={selectedChart} />
+              <SimpleChart key={`${selectedChart.symbol}-${range}`} data={selectedChart} />
             ) : (
               <div className="mc-loading">{loading ? 'Loading chart...' : 'No chart data'}</div>
             )}
@@ -299,7 +302,7 @@ export function MultiChartPanel({
                 </span>
                 <span className="mc-tile-chart">
                   {charts[symbol] ? (
-                    <SimpleChart data={charts[symbol]} compact />
+                    <SimpleChart key={`${symbol}-${range}`} data={charts[symbol]} compact />
                   ) : (
                     <span className="mc-loading">{loading ? 'Loading...' : 'No data'}</span>
                   )}

@@ -45,6 +45,8 @@ function rangeStartMs(range: ChartRange): number {
       return now - 35 * day;
     case '1m':
       return now - 90 * day;
+    case '3m':
+      return now - 150 * day;
     case '6m':
       return now - 240 * day;
     case '1y':

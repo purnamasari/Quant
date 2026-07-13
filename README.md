@@ -1,8 +1,8 @@
 # Quant
 
-Quant is an open-source desktop market terminal for tracking ETFs and stocks. It combines a watchlist, holdings-driven news, earnings context, annotated charts, macro overlays, evidence-backed signal scoring, a decision journal, and an optional verified local Quant AI harness.
+Quant is an open-source desktop market terminal for tracking ETFs and stocks. It combines a watchlist, holdings-driven news, earnings context, annotated charts, macro overlays, evidence-backed signal scoring, a decision journal, and an optional verified Quant AI harness.
 
-The core promise is simple: useful market context without paid API lock-in. Quant can run with public market data sources, deterministic signal analysis, and a local OpenAI-compatible LLM server when you want AI responses. No cloud LLM API key is required for the default experience.
+The core promise is simple: useful market context without paid API lock-in. Quant can run with public market data sources and deterministic signal analysis, use a private llama.cpp server, or connect to an optional OpenAI, Gemini, Grok, or Claude account. No cloud LLM API key is required for the default experience.
 
 <p align="center">
   <img src="./docs/assets/showcase/quant-hero.png" alt="Quant desktop market terminal hero image" width="100%">
@@ -12,7 +12,7 @@ The core promise is simple: useful market context without paid API lock-in. Quan
   <a href="https://github.com/eisenjimmy/Quant"><img src="https://img.shields.io/badge/repo-eisenjimmy%2FQuant-4d7ef7" alt="Repository"></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-1b2438" alt="Supported platforms">
   <img src="https://img.shields.io/badge/local%20AI-optional-1fbf75" alt="Optional local AI">
-  <img src="https://img.shields.io/badge/cloud%20LLM%20API%20cost-%240-1fbf75" alt="Zero cloud LLM API cost">
+  <img src="https://img.shields.io/badge/cloud%20LLM-optional-1fbf75" alt="Optional cloud LLM providers">
   <img src="https://img.shields.io/badge/license-MIT-6d95ff" alt="MIT license">
 </p>
 
@@ -30,9 +30,17 @@ Quant is built for quick market scanning:
 - Review a deterministic Signal Desk before asking an AI agent.
 - Inspect numbered evidence with source and quality status before acting on a signal.
 - Save a decision journal entry with the thesis, catalyst, invalidation, and exact signal snapshot.
-- Use Quant AI with no paid cloud LLM API cost by staying in deterministic mode or running a local model server.
+- Use Quant AI in deterministic mode, through local llama.cpp, or with an optional OpenAI, Gemini, Grok, or Claude API key.
 
-## What's New in v1.2.1
+## What's New in v1.3.0
+
+- Dedicated Quant AI Settings tab with local llama.cpp, OpenAI, Gemini, Grok, and Claude provider profiles.
+- Real connection testing for endpoint, authentication, and model configuration.
+- OS-encrypted cloud API-key storage that never returns saved credentials to the renderer.
+- The full provider setup is also available during first-run onboarding.
+- Multi-chart 1M, 3M, and 1Y controls now reload and rebuild every pane with the correct candle series.
+
+### Introduced in v1.2.1
 
 - Market News and its symbol filter rail are now strictly contained within the center workspace and cannot paint over the Earnings pane.
 - Long headlines and previews shrink and wrap within the owning grid column.
@@ -106,7 +114,7 @@ npm start
 
 ### First-Run Onboarding
 
-The onboarding wizard helps a new user choose a starter watchlist, decide whether to enable local LLM calls, and understand the basic reading flow.
+The onboarding wizard helps a new user choose a starter watchlist, configure local llama.cpp or an optional cloud provider, test the connection, and understand the basic reading flow.
 
 ![Quant onboarding wizard](./docs/assets/screenshots/quant-onboarding.png)
 
@@ -160,19 +168,30 @@ Quant AI is a dedicated chart tab. It locks a numbered evidence ledger from the 
 
 ![Quant AI agent tab](./docs/assets/screenshots/quant-ai-agent.png)
 
-## Local AI With Zero Cloud LLM API Cost
+## Quant AI Provider Setup
 
-Quant AI does not require a paid cloud model provider.
+Quant AI does not require a paid cloud model provider. Open the **Settings** tab—or use the same setup during onboarding—to choose one active inference provider for the analyst, isolated verifier, and final orchestrator.
 
-You have three modes:
+Available modes and providers:
 
-| Mode | Setup | Cloud LLM API Cost | Behavior |
+| Provider | Default endpoint | Default model | Credential |
 | --- | --- | --- | --- |
-| Deterministic fallback | None | `$0` | Quant returns a rules-based memo from the signal engine |
-| Local LLM | Run LM Studio, llama.cpp, Ollama OpenAI mode, or a proxy | `$0` | Quant runs analyst, verifier, and orchestrator passes against one evidence ledger |
-| Disabled | Leave local LLM off | `$0` | The AI tab remains usable through deterministic analysis |
+| Deterministic fallback | None | Rules engine | None |
+| Local llama.cpp | `http://127.0.0.1:8080/v1` | `gemma-4-e4b-it` | None |
+| OpenAI | `https://api.openai.com/v1` | `gpt-5.4-mini` | OpenAI API key |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-3.5-flash` | Gemini API key |
+| xAI Grok | `https://api.x.ai/v1` | `grok-4.3` | xAI API key |
+| Anthropic Claude | `https://api.anthropic.com/v1` | `claude-sonnet-4-6` | Anthropic API key |
 
-Expected local server endpoints:
+### Local llama.cpp
+
+Start a llama.cpp OpenAI-compatible server:
+
+```bash
+llama-server -m /path/to/model.gguf --host 127.0.0.1 --port 8080
+```
+
+Quant uses:
 
 - `GET /health`
 - `POST /v1/chat/completions`
@@ -181,7 +200,8 @@ Example local setup:
 
 ```bash
 export QUANT_LLM_ENABLED=1
-export QUANT_LLM_BASE_URL=http://127.0.0.1:8080
+export QUANT_LLM_PROVIDER=local
+export QUANT_LLM_BASE_URL=http://127.0.0.1:8080/v1
 export QUANT_LLM_MODEL=gemma-4-e4b-it
 npm start
 ```
@@ -190,12 +210,17 @@ Windows PowerShell:
 
 ```powershell
 $env:QUANT_LLM_ENABLED="1"
-$env:QUANT_LLM_BASE_URL="http://127.0.0.1:8080"
+$env:QUANT_LLM_PROVIDER="local"
+$env:QUANT_LLM_BASE_URL="http://127.0.0.1:8080/v1"
 $env:QUANT_LLM_MODEL="gemma-4-e4b-it"
 npm start
 ```
 
-You can also configure this through onboarding. Saved LLM preferences are stored in Electron local app data as `llm-settings.json`.
+### Cloud credentials
+
+Cloud API keys are optional. Quant encrypts saved keys using Electron `safeStorage`, backed by the operating system's credential protection. Keys stay in the Electron main process, are never returned to the UI after saving, and are sent only to the configured provider endpoint. If secure encryption is unavailable, Quant refuses to save the key in plaintext.
+
+The **Test connection** action sends a minimal completion to verify the current endpoint, key, and model before the configuration is used by the harness.
 
 ## Feature Map
 
@@ -206,13 +231,13 @@ You can also configure this through onboarding. Saved LLM preferences are stored
 | News | Pull public finance headlines and group them by selected market universe |
 | Swing news | Group headlines around each detected chart swing high or swing low |
 | Earnings | Show upcoming earnings for watched names and ETF holdings |
-| Charts | Candlesticks, volume, ranges, pivots, support/resistance, risk overlay |
+| Charts | Candlesticks, volume, 1M/3M/1Y multi-chart ranges, pivots, support/resistance, risk overlay |
 | Macro overlays | Jobs, unemployment, CPI, 10Y yield, oil, VIX |
 | Signal Board | End-of-day scan for cup bases, moving-average order, highs, VCP, volume, MACD, rebounds, and relative strength |
 | Signal Desk | Deterministic setup classification, confidence, blockers, risk plan, numbered evidence provenance |
 | Decision Journal | Local thesis, catalyst, invalidation, lifecycle state, and immutable signal snapshot |
-| Quant AI | Verified analyst, isolated verifier, bounded orchestrator, citations, and deterministic fallback |
-| Local persistence | Watchlist, decision journal, saved Quant AI insights, LLM settings |
+| Quant AI | Local/cloud provider selection, verified analyst, isolated verifier, bounded orchestrator, citations, and deterministic fallback |
+| Local persistence | Watchlist, decision journal, saved Quant AI insights, LLM settings, OS-encrypted provider credentials |
 | Release builds | macOS and Windows ZIPs published on GitHub Releases |
 
 ## Generated Showcase Visual
@@ -254,7 +279,8 @@ Quant/
         holdings.ts           ETF holdings lookup
         insightStore.ts       Saved Quant AI insight records
         journalStore.ts       Transactional local Decision Journal persistence
-        llmSettings.ts        Optional local LLM settings persistence
+        llmProvider.ts        OpenAI-compatible and Claude request adapters
+        llmSettings.ts        Provider settings and encrypted credential persistence
         macro.ts              Jobs, unemployment, CPI, 10Y, oil, VIX overlays
         news.ts               Market news aggregation
         pivotNews.ts          News grouped around chart pivots
