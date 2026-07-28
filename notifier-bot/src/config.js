@@ -39,12 +39,22 @@ module.exports = {
   // backtest + Jaccard redundancy check): these are the least-correlated
   // AND highest-expectancy signal kinds. Override in .env if you disagree
   // after reviewing that table yourself — don't treat this as gospel.
+  // Updated after the 10y/full-cycle + cost-sensitivity + stability re-test
+  // (see data/stock-signal-validation.md "Improvement pass"). The original
+  // 3y-only picks (mean-reversion, volume-surge, cup-handle) flipped sign
+  // between 2016-2021 and 2021-2026 and went negative once a 0.15%
+  // round-trip cost was assumed — they were riding the recent bull run, not
+  // a real edge. momentum/cup-forming/golden-cross were the only kinds
+  // that stayed positive across both halves AND after cost.
   alertStockKinds: csv(process.env.ALERT_STOCK_KINDS).length
     ? csv(process.env.ALERT_STOCK_KINDS)
-    : ['mean-reversion', 'golden-cross', 'volume-surge', 'cup-handle'],
+    : ['momentum', 'cup-forming', 'golden-cross'],
   // Deliberately different from stock defaults — see
   // data/crypto-signal-validation.md: golden-cross/cup-handle back-tested
   // negative on crypto even though they were among the best on stocks.
+  // Re-checked with a 0.25% round-trip cost assumption in the improvement
+  // pass — all four stay comfortably positive (0.44%-0.91%), unlike the
+  // original stock picks which didn't survive their own cost check.
   alertCryptoKinds: csv(process.env.ALERT_CRYPTO_KINDS).length
     ? csv(process.env.ALERT_CRYPTO_KINDS)
     : ['ma-alignment', 'near-52w-high', 'volume-surge', 'cup-forming'],

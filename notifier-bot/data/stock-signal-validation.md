@@ -63,6 +63,68 @@ not proof bearish patterns never work, only that they didn't in this
 specific sample. Re-run this backtest periodically, especially after any
 extended down/choppy period, and reconsider.
 
+## Improvement pass (10y history + cost sensitivity + stability check)
+
+The original 3-year backtest above turned out to be a bull-market snapshot.
+Three follow-up tests changed the picture substantially:
+
+**1. Extended to 10 years (2016-2026, includes the 2020 COVID crash and the
+2022 bear market), 91 symbols:**
+
+| kind | 10y expectancy | trades |
+|---|---|---|
+| momentum | 0.19% | 34,304 |
+| cup-forming | 0.17% | 38,906 |
+| macd-bullish | 0.16% | 102,373 |
+| golden-cross | 0.16% | 6,935 |
+| vcp | 0.14% | 78,515 |
+| ma-alignment | 0.12% | 61,736 |
+| cup-handle | 0.09% | 15,028 |
+| volume-surge | 0.06% | 5,826 |
+| mean-reversion | 0.04% | 4,280 |
+
+**2. Split into two 5-year halves (2016-2021 vs 2021-2026) to check
+stability — this is the important one:**
+
+| kind | 2016-2021 | 2021-2026 | stable? |
+|---|---|---|---|
+| momentum | 0.18% | 0.21% | ✅ yes |
+| cup-forming | 0.20% | 0.14% | ✅ yes |
+| golden-cross | 0.20% | 0.12% | ✅ yes |
+| macd-bullish | 0.19% | 0.13% | ✅ yes |
+| ma-alignment | 0.14% | 0.10% | ✅ yes |
+| cup-handle | 0.10% | 0.08% | ✅ yes (weak) |
+| **mean-reversion** | **-0.51%** | **+0.44%** | ❌ **sign flips** |
+| **volume-surge** | **-0.10%** | **+0.22%** | ❌ **sign flips** |
+
+**3. Assumed 0.15% round-trip cost (spread + slippage) — thin margins
+mostly don't survive:**
+
+| kind | cost-adjusted expectancy |
+|---|---|
+| momentum | 0.04% |
+| cup-forming | 0.02% |
+| macd-bullish | 0.01% |
+| golden-cross | 0.01% |
+| cup-handle | **-0.06%** |
+| volume-surge | **-0.09%** |
+| mean-reversion | **-0.11%** |
+
+**4. Confluence check** — does requiring 2+ of (momentum, cup-forming,
+golden-cross, macd-bullish) on the same day beat requiring just 1? No:
+0.17% expectancy either way, no improvement. Not worth the added
+complexity/fewer alerts.
+
+### Conclusion: default alert kinds changed
+
+`mean-reversion` and `volume-surge` — two of the original four defaults —
+were flipping sign between the two 5-year halves and turned negative once
+a realistic trading cost was assumed. `cup-handle` also went negative
+post-cost. **New default: `momentum`, `cup-forming`, `golden-cross`** —
+the only three that stayed positive across both time halves AND after
+cost. Even these are thin (0.01-0.04% after cost) — treat every alert as a
+low-conviction, small-edge signal, not a proven system.
+
 ## Reading: what this means for the alert filter
 
 The four highest-expectancy kinds (mean-reversion, golden-cross, volume-surge,

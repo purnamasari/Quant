@@ -43,7 +43,13 @@ function forwardReturn(candles, entryIndex, holdDays, direction = 'long') {
   return direction === 'short' ? -priceReturn : priceReturn;
 }
 
-function summarize(returns) {
+// costPercent: assumed round-trip friction (spread + slippage + any fee) in
+// percentage points, subtracted from every trade's return before stats are
+// computed. Added because raw backtest expectancy here (0.1-0.6%) is thin
+// enough that realistic execution costs can flip several signals negative —
+// see data/stock-signal-validation.md "Transaction cost sensitivity".
+function summarize(rawReturns, costPercent = 0) {
+  const returns = costPercent ? rawReturns.map((r) => r - costPercent) : rawReturns;
   const n = returns.length;
   if (!n) return { trades: 0, winRate: null, avgReturn: null, expectancy: null };
   const wins = returns.filter((r) => r > 0);
@@ -63,7 +69,7 @@ function summarize(returns) {
   };
 }
 
-async function runUniverseBacktest({ range = '3y', holdDays = 2, symbols = null, log = console.log } = {}) {
+async function runUniverseBacktest({ range = '10y', holdDays = 2, symbols = null, log = console.log, costPercent = 0 } = {}) {
   const universe = symbols || getUniverse();
   const perKindReturns = {};
   const perSymbolFireDays = {}; // symbol -> { kind: Set(dayIndex) } for correlation analysis
@@ -96,7 +102,7 @@ async function runUniverseBacktest({ range = '3y', holdDays = 2, symbols = null,
 
   const summaryByKind = {};
   for (const [kind, returns] of Object.entries(perKindReturns)) {
-    summaryByKind[kind] = summarize(returns);
+    summaryByKind[kind] = summarize(returns, costPercent);
   }
 
   return { symbolsUsed, holdDays, range, summaryByKind, perSymbolFireDays };

@@ -45,6 +45,29 @@ clearly negative. **None enabled in `config.alertCryptoKinds`.** Same
 caveat as stocks applies: this window was broadly a rising market for
 majors, so shorting underperforming here doesn't mean it always would.
 
+## Improvement pass follow-ups
+
+**Jaccard redundancy check (was a known gap, now done):** 12 pairs, same
+methodology as stocks. Top overlaps: `ma-alignment|momentum` (0.285),
+`macd-bullish|vcp` (0.264) — consistent with the stock findings (moving
+average and MACD-family signals tend to co-fire). The four enabled
+defaults (ma-alignment, near-52w-high, volume-surge, cup-forming) are not
+among the highly-correlated pairs, so they're not just re-describing each
+other.
+
+**Cost sensitivity (0.25% round-trip — wider than stocks' 0.15% given
+typically higher effective crypto spreads + perpetual funding drag over a
+2-day hold):** all four current defaults stay comfortably positive —
+volume-surge 0.91%, ma-alignment 0.88%, near-52w-high 0.79%, cup-forming
+0.44%. Crypto's larger raw volatility gives these more room above the cost
+floor than stocks had. No change needed to `alertCryptoKinds`.
+
+**OKX vs Kraken sanity check:** BTC daily closes compared for 5 recent
+days — differences ranged 0.01%-1.24%, most likely from different UTC
+candle-close conventions between exchanges rather than a broken feed. Not
+alarming, but a reminder that OKX-sourced signals could occasionally fire
+a day earlier/later than the same pattern would on Binance itself.
+
 ## Known gaps (not done tonight, be aware before trusting this fully)
 
 - No Jaccard/correlation redundancy check for crypto signals (only done for

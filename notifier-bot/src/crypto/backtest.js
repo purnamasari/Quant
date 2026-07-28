@@ -12,7 +12,7 @@ const { walkForwardOccurrences, forwardReturn, summarize } = require('../stock/b
 const { getDailyCandles } = require('./okx');
 const { getUniverse } = require('./universe');
 
-async function runCryptoBacktest({ days = 730, holdDays = 2, symbols = null, log = console.log } = {}) {
+async function runCryptoBacktest({ days = 730, holdDays = 2, symbols = null, log = console.log, costPercent = 0 } = {}) {
   const universe = symbols || getUniverse();
   const perKindReturns = {};
   let symbolsUsed = 0;
@@ -50,7 +50,7 @@ async function runCryptoBacktest({ days = 730, holdDays = 2, symbols = null, log
 
   const summaryByKind = {};
   for (const [kind, returns] of Object.entries(perKindReturns)) {
-    summaryByKind[kind] = summarize(returns);
+    summaryByKind[kind] = summarize(returns, costPercent);
   }
   return { symbolsUsed, holdDays, days, summaryByKind };
 }
