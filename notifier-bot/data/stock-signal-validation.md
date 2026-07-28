@@ -40,6 +40,29 @@ forward.
 
 Full table in job output / re-run `npm run correlate`.
 
+## Bearish/short mirror signals — tested, NOT enabled
+
+At the user's request ("kalau signal bearishnya cukup kayanya worth buat
+dimention"), 9 bearish mirror signals were added (death-cross,
+ma-breakdown [reuses ma-alignment machinery inverted], macd-bearish,
+volume-surge-down, momentum-laggard, mean-reversion-short, near/new-52w-low,
+rebound-down, distribution) and backtested with the same methodology,
+direction-aware (short PnL = -price return).
+
+**Result: every single bearish kind was flat-to-negative expectancy** except
+`new-52w-low` (+0.02%, essentially breakeven, n=359). Worst offenders:
+volume-surge-down (-0.5%), momentum-laggard (-0.47%), mean-reversion-short
+(-0.39%). None are enabled in `config.alertStockKinds` as a result — the
+code fully supports them (every signal carries a `direction` field), but
+the data doesn't back turning any into an alert trigger right now.
+
+**Caveat:** this is very likely a reflection of the backtest window being a
+broadly rising market for the last 3 years — shorting into an uptrending
+tape is expected to underperform regardless of pattern quality. This is
+not proof bearish patterns never work, only that they didn't in this
+specific sample. Re-run this backtest periodically, especially after any
+extended down/choppy period, and reconsider.
+
 ## Reading: what this means for the alert filter
 
 The four highest-expectancy kinds (mean-reversion, golden-cross, volume-surge,

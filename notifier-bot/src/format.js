@@ -1,33 +1,86 @@
+// Telegram HTML parse_mode chokes on stray <, >, & in dynamic text (news
+// headlines, signal detail strings) — escape before interpolating into
+// hand-built tags like <a href="...">.
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function toneEmoji(tone) {
   if (tone === 'hot') return '🔥';
   if (tone === 'watch') return '👀';
   return '📈';
 }
 
-function formatStockAlert({ symbol, name, signal, plan, earningsWarning }) {
+function directionLabel(direction) {
+  return direction === 'short' ? '🔴 SHORT' : '🟢 LONG';
+}
+
+function newsLines(news) {
+  if (!news?.length) return [];
+  return [
+    '',
+    '📰 News:',
+    ...news.map((n) => (n.link ? `• <a href="${escapeHtml(n.link)}">${escapeHtml(n.title)}</a>` : `• ${escapeHtml(n.title)}`)),
+  ];
+}
+
+function formatStockAlert({ symbol, name, signal, plan, earningsWarning, news }) {
   const lines = [
-    `${toneEmoji(signal.tone)} <b>${symbol}</b> — ${signal.label}`,
-    name ? `<i>${name}</i>` : null,
-    signal.detail,
+    `${toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> — ${escapeHtml(signal.label)} [${directionLabel(signal.direction)}]`,
+    name ? `<i>${escapeHtml(name)}</i>` : null,
+    escapeHtml(signal.detail),
     '',
     `Entry ${plan.entry} | Stop ${plan.stop} | Target ${plan.target} | R:R ${plan.rewardRisk ?? '-'}`,
     `Stop distance: ${plan.stopDistancePercent}%`,
+    ...newsLines(news),
   ];
   if (earningsWarning) lines.push('', `⚠️ ${earningsWarning}`);
-  return lines.filter(Boolean).join('\n');
+  return lines.filter((l) => l !== null).join('\n');
 }
 
-function formatCryptoAlert({ symbol, signal, plan }) {
+function formatCryptoAlert({ symbol, signal, plan, news }) {
   const lines = [
-    `${toneEmoji(signal.tone)} <b>${symbol}</b> (crypto) — ${signal.label}`,
-    signal.detail,
+    `${toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> (crypto) — ${escapeHtml(signal.label)} [${directionLabel(signal.direction)}]`,
+    escapeHtml(signal.detail),
     '',
     `Entry ${plan.entry} | Stop ${plan.stop} | Target ${plan.target} | R:R ${plan.rewardRisk ?? '-'}`,
     `Stop distance: ${plan.stopDistancePercent}%`,
+    ...newsLines(news),
     '',
-    '<i>Price data via OKX (Binance unreachable from this job\'s network) — verify against your actual venue before entering.</i>',
+    "<i>Price data via OKX (Binance unreachable from this job's network) — verify against your actual venue before entering.</i>",
   ];
-  return lines.filter(Boolean).join('\n');
+  return lines.filter((l) => l !== null).join('\n');
 }
 
-module.exports = { formatStockAlert, formatCryptoAlert };
+function formatDailyReminder({ macroEvents, earningsTomorrow, tokenUnlocksTomorrow, dateYmd }) {
+  if (!macroEvents.length && !earningsTomorrow.length && !tokenUnlocksTomorrow.length) return null;
+  const lines = [`🗓️ <b>H-1 Reminder untuk ${dateYmd}</b>`];
+
+  if (macroEvents.length) {
+    lines.push('', '<b>Macro events:</b>');
+    for (const e of macroEvents) {
+      lines.push(`• ${escapeHtml(e.time)} UTC — ${escapeHtml(e.name)}${e.consensus && e.consensus.trim() ? ` (consensus ${escapeHtml(e.consensus)})` : ''}`);
+    }
+  }
+
+  if (earningsTomorrow.length) {
+    lines.push('', '<b>Earnings:</b>');
+    for (const e of earningsTomorrow) {
+      lines.push(`• ${escapeHtml(e.symbol)} — ${escapeHtml(e.name || '')}`.trim());
+    }
+  }
+
+  if (tokenUnlocksTomorrow.length) {
+    lines.push('', '<b>Token unlocks:</b>');
+    for (const u of tokenUnlocksTomorrow) {
+      lines.push(`• ${escapeHtml(u.symbol)}${u.note ? ` — ${escapeHtml(u.note)}` : ''}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+module.exports = { formatStockAlert, formatCryptoAlert, formatDailyReminder };

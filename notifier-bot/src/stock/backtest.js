@@ -16,26 +16,31 @@ const { getChart } = require('./yahoo');
 const { getUniverse } = require('./universe');
 
 function walkForwardOccurrences(candles, minHistory = 55) {
-  // occurrences[kind] = array of { index, score }
+  // occurrences[kind] = array of { index, score, direction }
   const occurrences = {};
   for (let i = minHistory; i < candles.length; i++) {
     const window = candles.slice(0, i + 1);
     const { signals } = detectStockSignals(window);
     for (const s of signals) {
       if (!occurrences[s.kind]) occurrences[s.kind] = [];
-      occurrences[s.kind].push({ index: i, score: s.score });
+      occurrences[s.kind].push({ index: i, score: s.score, direction: s.direction || 'long' });
     }
   }
   return occurrences;
 }
 
-function forwardReturn(candles, entryIndex, holdDays) {
+// PnL-style return: for 'short' signals, profit comes from the price
+// FALLING, so the raw price return is inverted before it's pooled with
+// long-signal returns — this makes expectancy directly comparable across
+// both directions (positive = the trade direction was right).
+function forwardReturn(candles, entryIndex, holdDays, direction = 'long') {
   const exitIndex = Math.min(candles.length - 1, entryIndex + holdDays);
   if (exitIndex <= entryIndex) return null;
   const entryClose = candles[entryIndex].close;
   const exitClose = candles[exitIndex].close;
   if (!(entryClose > 0)) return null;
-  return ((exitClose - entryClose) / entryClose) * 100;
+  const priceReturn = ((exitClose - entryClose) / entryClose) * 100;
+  return direction === 'short' ? -priceReturn : priceReturn;
 }
 
 function summarize(returns) {
@@ -83,7 +88,7 @@ async function runUniverseBacktest({ range = '3y', holdDays = 2, symbols = null,
       perSymbolFireDays[symbol][kind] = new Set(hits.map((h) => h.index));
       if (!perKindReturns[kind]) perKindReturns[kind] = [];
       for (const hit of hits) {
-        const ret = forwardReturn(candles, hit.index, holdDays);
+        const ret = forwardReturn(candles, hit.index, holdDays, hit.direction);
         if (ret !== null) perKindReturns[kind].push(ret);
       }
     }

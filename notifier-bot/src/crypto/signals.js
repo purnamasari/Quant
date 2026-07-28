@@ -16,12 +16,15 @@ function detectCryptoSignals(candles, fundingRate) {
   if (fundingRate && Number.isFinite(fundingRate.fundingRate)) {
     const rate = fundingRate.fundingRate;
     if (Math.abs(rate) >= FUNDING_EXTREME_THRESHOLD) {
+      // Very positive funding = longs paying shorts = crowded long =
+      // contrarian short risk. Very negative = crowded short = squeeze-up risk.
       signals.push({
         kind: 'funding-extreme',
         label: rate > 0 ? 'Funding extreme (long crowded)' : 'Funding extreme (short crowded)',
         score: 11,
         detail: `Perpetual funding rate is ${(rate * 100).toFixed(3)}% per 8h — crowded positioning, possible reversal risk.`,
-        tone: rate > 0 ? 'watch' : 'bullish',
+        tone: 'watch',
+        direction: rate > 0 ? 'short' : 'long',
       });
     }
   }

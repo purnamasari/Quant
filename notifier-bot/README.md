@@ -27,6 +27,35 @@ node src/job.js
 No `npm install` needed — everything uses Node's built-in `fetch` (Node
 18+ required, tested on Node 22).
 
+## Long AND short, with a caveat
+
+Every signal kind now carries a `direction: 'long' | 'short'`. Bearish
+mirror signals (death-cross, macd-bearish, volume-surge-down,
+momentum-laggard, mean-reversion-short, near/new-52w-low, rebound-down,
+distribution) were added and backtested the same way as the long ones —
+**but none of them cleared a meaningful expectancy bar** (see the "Bearish
+mirror signals" section in both `data/*-signal-validation.md` files), so
+none are in the default `alertStockKinds`/`alertCryptoKinds` filters. The
+code fully supports enabling them (just add the kind to `ALERT_STOCK_KINDS`
+/ `ALERT_CRYPTO_KINDS` in `.env`), but the data doesn't back it right now —
+likely because the backtest window was a broadly rising market. Re-test
+after a real down/choppy stretch before trusting a short signal.
+
+## H-1 reminders + news context
+
+Every day, before the signal alerts, the bot sends one reminder message
+covering **tomorrow**:
+- Major US macro releases (CPI, PCE, NFP, FOMC, GDP, etc.) via Nasdaq's
+  public economic-calendar API (`src/macro.js`)
+- Earnings across the **whole** stock watchlist, not just symbols with an
+  active signal (`scanEarningsTomorrow` in `src/job.js`)
+- Token unlocks you've noted yourself in `data/token-unlocks.json` — see
+  that file's header comment for why this isn't a live feed
+
+Each signal alert also carries 1-2 recent news headlines (`src/news.js`):
+Yahoo Finance RSS per stock symbol, Google News RSS search by coin name
+for crypto.
+
 ## What's in here
 
 - `src/stock/` — Yahoo Finance chart + earnings fetch, ported signal
@@ -39,9 +68,13 @@ No `npm install` needed — everything uses Node's built-in `fetch` (Node
   (see `data/stock-signal-validation.md`).
 - `src/risk.js` — ATR-based entry/stop/target so alerts are directly
   actionable, not just "something happened."
-- `src/job.js` — daily orchestration: scan stocks + crypto, filter to the
-  validated signal kinds, flag (never silently skip) imminent earnings,
-  send to Telegram.
+- `src/job.js` — daily orchestration: send H-1 reminder, scan stocks +
+  crypto, filter to the validated signal kinds, flag (never silently skip)
+  imminent earnings, send to Telegram.
+- `src/macro.js` — tomorrow's major US macro events (Nasdaq calendar API).
+- `src/news.js` — news headlines per stock/crypto for alert context.
+- `src/tokenUnlocks.js` — reads `data/token-unlocks.json` (user-maintained,
+  no live API found for this — see file header).
 - `data/stock-signal-validation.md`, `data/crypto-signal-validation.md` —
   the actual backtest + correlation numbers behind the default alert
   filters in `src/config.js`. Read these before trusting the defaults.

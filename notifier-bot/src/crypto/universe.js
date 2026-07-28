@@ -5,6 +5,7 @@ const config = require('../config');
 const DEFAULT_VALIDATION_UNIVERSE = [
   'BTC-USDT', 'ETH-USDT', 'SOL-USDT', 'BNB-USDT', 'XRP-USDT',
   'DOGE-USDT', 'ADA-USDT', 'AVAX-USDT', 'LINK-USDT', 'LTC-USDT',
+  'ZEC-USDT', 'HYPE-USDT',
 ];
 
 function getUniverse() {

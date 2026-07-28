@@ -32,6 +32,19 @@ equity-tuned pattern rules on crypto unchanged and assume they still work.
 `near-52w-high`, `volume-surge`, `cup-forming` — deliberately excludes
 golden-cross and cup-handle given the negative backtest result above.
 
+## Bearish/short mirror signals — tested, NOT enabled
+
+Same 9 bearish mirror signals as stocks, same methodology, 12 pairs
+(added ZEC-USDT, HYPE-USDT to the validation universe). Result is the same
+conclusion as stocks: no bearish kind clears a meaningful bar.
+`rebound-down` (+0.05%, n=1244) and `near-52w-low` (+0.42%, but n=91 and
+37% win rate — high variance, not trustworthy) are the closest to
+breakeven; everything else (death-cross, volume-surge-down,
+mean-reversion-short, golden-cross's mirror, cup-handle's mirror) is
+clearly negative. **None enabled in `config.alertCryptoKinds`.** Same
+caveat as stocks applies: this window was broadly a rising market for
+majors, so shorting underperforming here doesn't mean it always would.
+
 ## Known gaps (not done tonight, be aware before trusting this fully)
 
 - No Jaccard/correlation redundancy check for crypto signals (only done for

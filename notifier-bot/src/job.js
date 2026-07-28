@@ -1,8 +1,13 @@
 // Daily orchestration job: scan stocks + crypto, filter to the
-// data-validated signal kinds (config.alertStockKinds / alertCryptoKinds),
-// attach an ATR-based entry/stop/target, flag (not skip) imminent
-// earnings, and push everything to Telegram. Meant to be run once a day —
-// see README.md for how this gets scheduled.
+// data-validated signal kinds (config.alertStockKinds / alertCryptoKinds —
+// long-only by design, see data/*-signal-validation.md for why bearish
+// mirrors aren't enabled), attach an ATR-based entry/stop/target + a
+// Long/Short direction label, attach a couple of news headlines per
+// alert, flag (not skip) imminent earnings, and push everything to
+// Telegram. Also sends a separate H-1 reminder: tomorrow's major macro
+// releases, earnings across the whole watchlist (not just symbols with a
+// live signal), and any token unlocks you've noted in
+// data/token-unlocks.json. Meant to run once a day — see README.md.
 
 const config = require('./config');
 const { sendMessage } = require('./telegram');
@@ -13,7 +18,10 @@ const cryptoUniverse = require('./crypto/universe');
 const { getDailyCandles, getFundingRate } = require('./crypto/okx');
 const { detectCryptoSignals } = require('./crypto/signals');
 const { riskPlanFor } = require('./risk');
-const { formatStockAlert, formatCryptoAlert } = require('./format');
+const { formatStockAlert, formatCryptoAlert, formatDailyReminder } = require('./format');
+const { getStockNews, getCryptoNews } = require('./news');
+const { getTomorrowMacroEvents, tomorrowYmd } = require('./macro');
+const { getTomorrowUnlocks } = require('./tokenUnlocks');
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,10 +48,11 @@ async function scanStocks() {
       }
 
       const plan = riskPlanFor(chart.candles);
+      const news = await getStockNews(entry.symbol, 2);
       for (const signal of matched) {
         alerts.push({
           symbol: entry.symbol,
-          text: formatStockAlert({ symbol: entry.symbol, name: entry.name, signal, plan, earningsWarning }),
+          text: formatStockAlert({ symbol: entry.symbol, name: entry.name, signal, plan, earningsWarning, news }),
         });
       }
     } catch (err) {
@@ -63,23 +72,59 @@ async function scanCrypto() {
       if (candles.length < 60) continue;
       const funding = await getFundingRate(symbol).catch(() => null);
       const { signals } = detectCryptoSignals(candles, funding);
-      const matched = signals.filter((s) => s.kind === 'funding-extreme' || config.alertCryptoKinds.includes(s.kind));
+      const matched = signals.filter((s) => s.kind === 'funding-extreme' ? false : config.alertCryptoKinds.includes(s.kind));
+      // funding-extreme is untested (see README) — informational only, not
+      // wired to alert by default. Flip the line above to include it once
+      // it's backtested, or handle it as its own lower-priority message.
       if (!matched.length) continue;
 
       const plan = riskPlanFor(candles);
+      const coinName = symbol.split('-')[0];
+      const news = await getCryptoNews(`${coinName} crypto`, 2);
       for (const signal of matched) {
-        alerts.push({ symbol, text: formatCryptoAlert({ symbol, signal, plan }) });
+        alerts.push({ symbol, text: formatCryptoAlert({ symbol, signal, plan, news }) });
       }
     } catch (err) {
       console.error(`[job] crypto ${symbol} failed:`, err.message);
     }
-    await sleep(150);
+    await sleep(200);
   }
   return alerts;
 }
 
+async function scanEarningsTomorrow(universe) {
+  const tomorrow = tomorrowYmd();
+  const hits = [];
+  for (const entry of universe) {
+    try {
+      const date = await getNextEarningsDate(entry.symbol);
+      if (date && date.toISOString().slice(0, 10) === tomorrow) {
+        hits.push({ symbol: entry.symbol, name: entry.name });
+      }
+    } catch {
+      // best-effort; skip on failure
+    }
+    await sleep(150);
+  }
+  return hits;
+}
+
+async function buildDailyReminder(stockUniverseList) {
+  const [macroEvents, earningsTomorrow, tokenUnlocksTomorrow] = await Promise.all([
+    getTomorrowMacroEvents(),
+    scanEarningsTomorrow(stockUniverseList),
+    Promise.resolve(getTomorrowUnlocks()),
+  ]);
+  return formatDailyReminder({ macroEvents, earningsTomorrow, tokenUnlocksTomorrow, dateYmd: tomorrowYmd() });
+}
+
 async function main() {
   const startedAt = new Date();
+  const stockUniverseList = stockUniverse.getUniverse();
+
+  const reminder = await buildDailyReminder(stockUniverseList);
+  if (reminder) await sendMessage(reminder);
+
   const [stockAlerts, cryptoAlerts] = await Promise.all([scanStocks(), scanCrypto()]);
   const all = [...stockAlerts, ...cryptoAlerts];
   console.log(`[job] ${all.length} alert(s) found (${stockAlerts.length} stock, ${cryptoAlerts.length} crypto)`);
@@ -103,4 +148,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { scanStocks, scanCrypto, main };
+module.exports = { scanStocks, scanCrypto, scanEarningsTomorrow, buildDailyReminder, main };
