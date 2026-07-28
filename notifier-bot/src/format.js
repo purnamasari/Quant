@@ -8,6 +8,8 @@ function escapeHtml(text) {
     .replace(/>/g, '&gt;');
 }
 
+const { withWib } = require('./time');
+
 function toneEmoji(tone) {
   if (tone === 'hot') return '🔥';
   if (tone === 'watch') return '👀';
@@ -27,11 +29,17 @@ function newsLines(news) {
   ];
 }
 
-function formatStockAlert({ symbol, name, signal, plan, earningsWarning, news }) {
+function convictionLine(conviction) {
+  if (!conviction) return null;
+  return `${conviction.emoji} Conviction: <b>${conviction.label}</b> — <i>${escapeHtml(conviction.reason)}</i>`;
+}
+
+function formatStockAlert({ symbol, name, signal, plan, earningsWarning, news, conviction }) {
   const lines = [
     `${toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> — ${escapeHtml(signal.label)} [${directionLabel(signal.direction)}]`,
     name ? `<i>${escapeHtml(name)}</i>` : null,
     escapeHtml(signal.detail),
+    convictionLine(conviction),
     '',
     `Entry ${plan.entry} | Stop ${plan.stop} | Target ${plan.target} | R:R ${plan.rewardRisk ?? '-'}`,
     `Stop distance: ${plan.stopDistancePercent}%`,
@@ -41,10 +49,11 @@ function formatStockAlert({ symbol, name, signal, plan, earningsWarning, news })
   return lines.filter((l) => l !== null).join('\n');
 }
 
-function formatCryptoAlert({ symbol, signal, plan, news }) {
+function formatCryptoAlert({ symbol, signal, plan, news, conviction }) {
   const lines = [
     `${toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> (crypto) — ${escapeHtml(signal.label)} [${directionLabel(signal.direction)}]`,
     escapeHtml(signal.detail),
+    convictionLine(conviction),
     '',
     `Entry ${plan.entry} | Stop ${plan.stop} | Target ${plan.target} | R:R ${plan.rewardRisk ?? '-'}`,
     `Stop distance: ${plan.stopDistancePercent}%`,
@@ -62,7 +71,7 @@ function formatDailyReminder({ macroEvents, earningsTomorrow, tokenUnlocksTomorr
   if (macroEvents.length) {
     lines.push('', '<b>Macro events:</b>');
     for (const e of macroEvents) {
-      lines.push(`• ${escapeHtml(e.time)} UTC — ${escapeHtml(e.name)}${e.consensus && e.consensus.trim() ? ` (consensus ${escapeHtml(e.consensus)})` : ''}`);
+      lines.push(`• ${escapeHtml(withWib(e.time))} — ${escapeHtml(e.name)}${e.consensus && e.consensus.trim() ? ` (consensus ${escapeHtml(e.consensus)})` : ''}`);
     }
   }
 

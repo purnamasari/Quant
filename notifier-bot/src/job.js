@@ -10,7 +10,7 @@
 // data/token-unlocks.json. Meant to run once a day — see README.md.
 
 const config = require('./config');
-const { sendMessage } = require('./telegram');
+const { sendMessage, sendPhoto } = require('./telegram');
 const stockUniverse = require('./stock/universe');
 const { getChart, getNextEarningsDate } = require('./stock/yahoo');
 const { detectStockSignals } = require('./stock/signals');
@@ -22,6 +22,10 @@ const { formatStockAlert, formatCryptoAlert, formatDailyReminder } = require('./
 const { getStockNews, getCryptoNews } = require('./news');
 const { getTomorrowMacroEvents, tomorrowYmd } = require('./macro');
 const { getTomorrowUnlocks } = require('./tokenUnlocks');
+const { convictionFor } = require('./conviction');
+const { nowStampWithWib } = require('./time');
+const { ChartRenderer } = require('./chart');
+const { makeAlertId, keyboardFor, recordAlert, processPendingCallbacks } = require('./tracking');
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -50,9 +54,18 @@ async function scanStocks() {
       const plan = riskPlanFor(chart.candles);
       const news = await getStockNews(entry.symbol, 2);
       for (const signal of matched) {
+        const conviction = convictionFor('stock', signal.kind);
         alerts.push({
+          market: 'stock',
           symbol: entry.symbol,
-          text: formatStockAlert({ symbol: entry.symbol, name: entry.name, signal, plan, earningsWarning, news }),
+          kind: signal.kind,
+          direction: signal.direction,
+          conviction: conviction.tier,
+          candles: chart.candles,
+          plan,
+          signal,
+          chartTitle: `${entry.symbol} — ${signal.label} [${signal.direction === 'short' ? 'SHORT' : 'LONG'}]`,
+          text: formatStockAlert({ symbol: entry.symbol, name: entry.name, signal, plan, earningsWarning, news, conviction }),
         });
       }
     } catch (err) {
@@ -82,7 +95,19 @@ async function scanCrypto() {
       const coinName = symbol.split('-')[0];
       const news = await getCryptoNews(`${coinName} crypto`, 2);
       for (const signal of matched) {
-        alerts.push({ symbol, text: formatCryptoAlert({ symbol, signal, plan, news }) });
+        const conviction = convictionFor('crypto', signal.kind);
+        alerts.push({
+          market: 'crypto',
+          symbol,
+          kind: signal.kind,
+          direction: signal.direction,
+          conviction: conviction.tier,
+          candles,
+          plan,
+          signal,
+          chartTitle: `${symbol} — ${signal.label} [${signal.direction === 'short' ? 'SHORT' : 'LONG'}]`,
+          text: formatCryptoAlert({ symbol, signal, plan, news, conviction }),
+        });
       }
     } catch (err) {
       console.error(`[job] crypto ${symbol} failed:`, err.message);
@@ -120,6 +145,13 @@ async function buildDailyReminder(stockUniverseList) {
 
 async function main() {
   const startedAt = new Date();
+
+  // Catch up on any FOLLOW/SKIP button presses since the last run before
+  // sending new alerts — see tracking.js for why this is delayed, not
+  // real-time.
+  const { processed } = await processPendingCallbacks();
+  if (processed) console.log(`[job] recorded ${processed} FOLLOW/SKIP decision(s) from since the last run`);
+
   const stockUniverseList = stockUniverse.getUniverse();
 
   const reminder = await buildDailyReminder(stockUniverseList);
@@ -129,15 +161,43 @@ async function main() {
   const all = [...stockAlerts, ...cryptoAlerts];
   console.log(`[job] ${all.length} alert(s) found (${stockAlerts.length} stock, ${cryptoAlerts.length} crypto)`);
 
-  for (const alert of all) {
-    await sendMessage(alert.text);
-    await sleep(500); // Telegram rate-limit courtesy
+  const renderer = new ChartRenderer();
+  try {
+    for (const alert of all) {
+      const alertId = makeAlertId(alert.market, alert.symbol, alert.kind);
+
+      try {
+        const png = await renderer.render({
+          candles: alert.candles,
+          entry: alert.plan.entry,
+          stop: alert.plan.stop,
+          target: alert.plan.target,
+          title: alert.chartTitle,
+        });
+        await sendPhoto(png, alert.chartTitle);
+      } catch (err) {
+        console.error(`[job] chart render failed for ${alert.symbol}:`, err.message);
+      }
+
+      await sendMessage(alert.text, { replyMarkup: keyboardFor(alertId) });
+      recordAlert({
+        id: alertId,
+        market: alert.market,
+        symbol: alert.symbol,
+        kind: alert.kind,
+        direction: alert.direction,
+        conviction: alert.conviction,
+      });
+      await sleep(500); // Telegram rate-limit courtesy
+    }
+  } finally {
+    await renderer.close();
   }
 
-  const stamp = startedAt.toISOString().slice(0, 16).replace('T', ' ');
+  const stamp = nowStampWithWib(startedAt);
   const summary = all.length
-    ? `Scan selesai (${stamp} UTC): ${all.length} alert dikirim di atas.`
-    : `Scan selesai (${stamp} UTC): tidak ada sinyal hari ini.`;
+    ? `Scan selesai (${stamp}): ${all.length} alert dikirim di atas.`
+    : `Scan selesai (${stamp}): tidak ada sinyal hari ini.`;
   await sendMessage(summary);
 }
 

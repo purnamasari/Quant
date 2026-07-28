@@ -24,8 +24,12 @@ cp .env.example .env
 node src/job.js
 ```
 
-No `npm install` needed — everything uses Node's built-in `fetch` (Node
-18+ required, tested on Node 22).
+Run `npm install` once (adds `playwright`, used only for chart rendering —
+everything else uses Node's built-in `fetch`, Node 18+ required, tested on
+Node 22). Playwright needs a Chromium binary; this was built against the
+one pre-installed at `/opt/pw-browsers` in the Claude Code environment
+(`src/chart.js` auto-detects it). Self-hosting elsewhere: either keep that
+same layout or run `npx playwright install chromium` once.
 
 ## Long AND short, with a caveat
 
@@ -56,6 +60,60 @@ Each signal alert also carries 1-2 recent news headlines (`src/news.js`):
 Yahoo Finance RSS per stock symbol, Google News RSS search by coin name
 for crypto.
 
+## Conviction rating
+
+Every alert shows a conviction tier (⭐⭐⭐ VERY HIGH / ⭐⭐ HIGH / ⭐ MEDIUM /
+▫️ LOW) plus a one-line reason. This is a static lookup
+(`data/signal-conviction.json`), hand-derived from the actual backtest
+numbers in the improvement pass — cost-adjusted expectancy, stability
+across the two 5-year halves, and sample size — not recomputed live on
+every run (that would mean re-running the full backtest daily, which takes
+tens of seconds to minutes). Nothing currently qualifies as VERY HIGH,
+which is intentional: none of the signals cleared that bar honestly. If
+you re-run the backtest scripts and the picture changes, update this file
+by hand.
+
+## Timezones and macro pings
+
+Every UTC time shown (macro events, run timestamps) also shows the WIB
+(UTC+7, no DST) equivalent — see `src/time.js`. Beyond the daily "what's
+happening tomorrow" digest, a **second, separate Routine runs hourly**
+(`src/macroPing.js`) and sends a one-off "~1 hour away" ping for any major
+macro release landing in the next ~70 minutes, tracked in
+`data/.macro-ping-state.json` so it doesn't repeat. Most hourly checks
+find nothing to send, which is expected.
+
+## Charts
+
+Each alert is preceded by a candlestick chart (last 60 daily candles) with
+entry/stop/target levels drawn on it, sent as a Telegram photo followed by
+the full text alert. Rendered via Playwright + the pre-installed Chromium
+using a plain `<canvas>` drawing (`src/chart.js`) — no chart-library
+dependency, no network calls from inside the rendered page. One browser
+instance is reused across all of a run's charts rather than launching per
+image (still adds real time to the job — expect it to take noticeably
+longer than the no-chart version, since each render is a full headless
+page load + screenshot).
+
+## FOLLOW / SKIP tracking — delayed, not real-time
+
+Each alert message carries two inline buttons. Tapping one is meant to
+record whether you actually took the trade, logged to
+`data/alert-log.json` (id, symbol, kind, direction, conviction, sentAt,
+decision, decidedAt).
+
+**Read this before expecting real-time behavior:** the bot is a daily
+(and hourly, for macro pings) cron job, not a running server. There's no
+webhook or long-poll listener sitting there waiting for your tap. Telegram
+queues button presses (`callback_query` updates) server-side regardless,
+so nothing is lost — but they're only picked up and logged the **next
+time `job.js` runs**, via `processPendingCallbacks()` in `src/tracking.js`
+calling `getUpdates()` once at the start of each run. That means a button
+you tap today shows up in the log (and stops showing a loading spinner in
+Telegram) up to ~24h later, not instantly. If you need real-time tracking,
+this architecture (scheduled Routine, no persistent process) can't give
+you that — it would need an actual always-on server with a webhook.
+
 ## What's in here
 
 - `src/stock/` — Yahoo Finance chart + earnings fetch, ported signal
@@ -75,6 +133,12 @@ for crypto.
 - `src/news.js` — news headlines per stock/crypto for alert context.
 - `src/tokenUnlocks.js` — reads `data/token-unlocks.json` (user-maintained,
   no live API found for this — see file header).
+- `src/conviction.js` — looks up `data/signal-conviction.json` per signal kind.
+- `src/time.js` — UTC → WIB conversion helpers.
+- `src/macroPing.js` — hourly "macro event ~1h away" check, run by a
+  separate Routine from the daily `job.js`.
+- `src/chart.js` — Playwright-based candlestick chart renderer.
+- `src/tracking.js` — FOLLOW/SKIP button logging (delayed, see above).
 - `data/stock-signal-validation.md`, `data/crypto-signal-validation.md` —
   the actual backtest + correlation numbers behind the default alert
   filters in `src/config.js`. Read these before trusting the defaults.
@@ -110,8 +174,13 @@ for crypto.
 
 ## Scheduling
 
-See the parent conversation for how this got wired up to a daily Routine
-in the Claude session that built it. If that session/environment goes
-away, this needs to be scheduled some other way (cron on a VPS, GitHub
-Actions, etc.) — nothing here depends on Claude Code to run once it's
-scheduled and has valid credentials.
+Two separate Routines were set up in the Claude session that built this:
+one daily (`node src/job.js`, the signal scan + H-1 digest) and one
+hourly (`node src/macroPing.js`, the ~1h-before macro ping). If that
+session/environment goes away, both need to be scheduled some other way
+(cron on a VPS, GitHub Actions, etc.) — nothing here depends on Claude
+Code to run once scheduled with valid credentials. Genuinely uncertain
+whether this environment's filesystem (including `.env`, which is
+deliberately not in git) survives being reclaimed after idling and then
+resumed by a Routine fire — worth checking after the first few scheduled
+runs actually land.

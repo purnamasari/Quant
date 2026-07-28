@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "note": "Conviction tiers derived from the improvement-pass backtest: cost-adjusted expectancy (0.15% stock / 0.25% crypto round-trip), stability across the two 5-year stock halves, and sample size. Not re-derived live on every run — re-run the backtest scripts periodically and update this by hand if the picture changes.",
+    "tiers": "very-high | high | medium | low"
+  },
+  "stock": {
+    "momentum": { "tier": "medium", "reason": "Stable across both 5y halves (0.18%->0.21%), but only 0.04% after cost — thin margin caps it below high." },
+    "cup-forming": { "tier": "medium", "reason": "Stable (0.20%->0.14%), 0.02% after cost — thin." },
+    "golden-cross": { "tier": "low", "reason": "Stable direction but smallest sample of the three defaults (n=6935) and thinnest cost-adjusted margin (0.01%)." },
+    "macd-bullish": { "tier": "medium", "reason": "Largest sample (102k) and stable, but very redundant with other signals (high Jaccard overlap) and only 0.01% after cost." },
+    "vcp": { "tier": "low", "reason": "Weakened a lot from 3y (0.21%) to 10y (0.07%) and negative after cost." },
+    "cup-handle": { "tier": "low", "reason": "Went negative once cost was applied (-0.06%)." },
+    "mean-reversion": { "tier": "low", "reason": "Sign flips between 5y halves (-0.51% then +0.44%) — not a real edge, regime-dependent." },
+    "volume-surge": { "tier": "low", "reason": "Sign flips between 5y halves (-0.10% then +0.22%)." },
+    "ma-alignment": { "tier": "low", "reason": "Positive but thin (0.12% 10y) and highly redundant with near-52w-high/momentum." }
+  },
+  "crypto": {
+    "ma-alignment": { "tier": "high", "reason": "0.88% after 0.25% cost assumption, n=918, not among the highly-correlated pairs." },
+    "volume-surge": { "tier": "high", "reason": "0.91% after cost, n=359." },
+    "near-52w-high": { "tier": "medium", "reason": "0.79% after cost but smaller sample (n=261) than the two 'high' kinds." },
+    "cup-forming": { "tier": "medium", "reason": "0.44% after cost, n=441 — solid but well below the top two." },
+    "vcp": { "tier": "low", "reason": "0.32% after cost but very high fire frequency (n=1345), likely redundant/generic." },
+    "mean-reversion": { "tier": "low", "reason": "0.32% after cost but small sample (n=167)." }
+  },
+  "default": { "tier": "low", "reason": "No backtest entry for this kind — treat as unvalidated until it's run through the same pipeline." }
+}

@@ -10,7 +10,10 @@
   "scripts": {
     "job": "node src/job.js",
     "correlate": "node src/analysis/correlateSignals.js",
-    "backtest:stock": "node src/stock/backtest.js"
+    "backtest:stock": "node src/stock/backtest.js",
+    "macro-ping": "node src/macroPing.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "playwright": "^1.62.0"
+  }
 }
