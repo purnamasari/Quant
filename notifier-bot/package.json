@@ -1,0 +1,16 @@
+{
+  "name": "quant-signal-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Telegram alert bot for short-swing (1-2 day hold) stock and crypto signals, built on Quant's signal detection logic.",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "job": "node src/job.js",
+    "correlate": "node src/analysis/correlateSignals.js",
+    "backtest:stock": "node src/stock/backtest.js"
+  },
+  "dependencies": {}
+}
