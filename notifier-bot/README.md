@@ -15,21 +15,46 @@ git subtree split --prefix=notifier-bot -b notifier-bot-only
 # push notifier-bot-only to a new repo
 ```
 
-## Setup
+**If you are an AI agent picking this up, read `AGENTS.md` first.** It
+documents the validation discipline this project depends on and the specific
+false positives already paid for. `ROADMAP.md` has the remaining work.
+
+## Deploying on a VPS
+
+Requires Node 18+ (tested on Node 22) and roughly 200MB of disk once
+Chromium is installed.
+
+```bash
+git clone <repo> && cd <repo>/notifier-bot
+npm install                      # only dependency is playwright
+npx playwright install chromium  # needed for chart images
+npx playwright install-deps      # system libs, Debian/Ubuntu; may need sudo
+
+cp .env.example .env             # then fill it in — see below
+node src/macroPing.js            # smoke test: should print "0 reminder(s) sent"
+```
+
+`src/chart.js` auto-detects Chromium under `/opt/pw-browsers` (the layout in
+the environment this was built in) and falls back to Playwright's own
+resolution, so a normal `playwright install` works without code changes.
+
+Minimum `.env` to run at all:
 
 ```
-cd notifier-bot
-cp .env.example .env
-# fill in TELEGRAM_BOT_TOKEN (from @BotFather) and TELEGRAM_CHAT_ID
-node src/job.js
+TELEGRAM_BOT_TOKEN=   # from @BotFather
+TELEGRAM_CHAT_ID=     # your user or group id
 ```
 
-Run `npm install` once (adds `playwright`, used only for chart rendering —
-everything else uses Node's built-in `fetch`, Node 18+ required, tested on
-Node 22). Playwright needs a Chromium binary; this was built against the
-one pre-installed at `/opt/pw-browsers` in the Claude Code environment
-(`src/chart.js` auto-detects it). Self-hosting elsewhere: either keep that
-same layout or run `npx playwright install chromium` once.
+Everything else has defaults. Worth setting: `ACCOUNT_SIZE` (turns alerts
+into concrete position sizes rather than ratios) and `CRYPTO_WATCHLIST`.
+
+**Verify before trusting it:** run `node src/cryptoJob.js` once by hand. It
+sends real Telegram messages, so a successful run is self-evidencing — and
+if nothing arrives, the cause is almost always a wrong `TELEGRAM_CHAT_ID`
+rather than a scan failure, since a scan with no matches exits silently and
+prints `0 new alert(s)`.
+
+**Then set up cron — nothing runs until you do.** See Scheduling below.
 
 ## SMC (Order Block / FVG / BoS) — ported from a real TradingView indicator
 
@@ -231,6 +256,16 @@ you that — it would need an actual always-on server with a webhook.
   filters in `src/config.js`. Read these before trusting the defaults.
 - `data/risk-management-plan.md` — the full leveraged-trading system design:
   sizing, leverage caps, funding, correlation, circuit breakers.
+- `src/newsStore.js` — disk-cached, rate-limit-aware Google News fetcher for
+  date-bounded historical windows; `data/news-cache/` is committed on purpose.
+- `src/analysis/newsBacktest.js` — tests whether news volume filters the
+  setup (it does, inversely) and whether news spikes trade on their own
+  (they don't).
+- `src/analysis/pairsTrading.js`, `swingStopTest.js` — rejected experiments,
+  kept with their verdicts in the header so they aren't re-attempted blind.
+- `AGENTS.md` — validation discipline and the traps already paid for. Read
+  before changing what gets alerted.
+- `ROADMAP.md` — what's left, ordered by value.
 
 ## Leverage — derived per trade, not chosen
 
@@ -268,13 +303,18 @@ Full reasoning, worked examples, and circuit breakers:
 
 ## Important limitations — read before relying on this
 
-1. **Binance is unreachable from this environment.** Both
+1. **Binance was unreachable from the build environment.** Both
    `api.binance.com` and `fapi.binance.com` returned HTTP 451
-   ("restricted location") when tested here; Bybit returned a CloudFront
-   403. OKX and Kraken/Coinbase were reachable, so crypto data comes from
-   OKX. If you self-host this somewhere with real Binance access, swap
-   `src/crypto/okx.js` for a Binance client — the signal/backtest code
-   above it doesn't need to change.
+   ("restricted location"); Bybit returned a CloudFront 403. OKX and
+   Kraken/Coinbase were reachable, so crypto data comes from OKX. A VPS in a
+   permitted jurisdiction may well reach Binance — worth trying, since that
+   is the actual trading venue and OKX/Binance daily closes were observed to
+   differ by 0.01%-1.24% (different candle-close conventions), enough to
+   shift a signal by a day. Swapping `src/crypto/okx.js` for a Binance client
+   needs no changes above it, but **re-run the crypto backtests afterwards**
+   — different candle boundaries mean the validation numbers do not transfer
+   automatically. Do not try to circumvent a geographic block; if the VPS
+   cannot reach it legitimately, stay on OKX.
 2. **Stock universe is small** (~90 large-cap US stocks/ETFs bundled in
    `data/symbol-directory.json`, copied from the Quant desktop app) — not
    the full US market. Set `STOCK_WATCHLIST` in `.env` to scan specific
@@ -293,21 +333,58 @@ Full reasoning, worked examples, and circuit breakers:
    cup-handle which flip negative) rather than hand-tuning new constants.
 6. **This sends real Telegram messages when run.** `TELEGRAM_BOT_TOKEN`
    and `TELEGRAM_CHAT_ID` in `.env` are real credentials — never commit
-   `.env` (it's gitignored) or paste the token anywhere public.
+   `.env` (it's gitignored) or paste the token anywhere public. There is no
+   dry-run flag; use the scripts under `src/analysis/` to experiment without
+   sending anything.
+7. **Nothing measures live performance.** `src/tracking.js` records
+   FOLLOW/SKIP presses (late — it polls on the next scheduled run) but
+   nothing records what a trade actually did. There is currently no signal
+   that an edge has decayed. See `ROADMAP.md` item 5.
+8. **News coverage is a headwind, not a tailwind.** Backtested: entering on a
+   news spike alone is negative on every coin tested, and cup-forming signals
+   perform *worse* the busier the news. Details in
+   `data/crypto-signal-validation.md`.
 
 ## Scheduling
 
-Three separate Routines were set up in the Claude session that built
-this:
-1. Daily (`node src/job.js`) — stock signal scan + H-1 digest, 21:30 UTC.
-2. Hourly (`node src/macroPing.js`) — ~1h-before macro event ping.
-3. Hourly, waking-hours only (`node src/cryptoJob.js`) — crypto scan,
-   `cron 0 22-23,0-14 * * *` UTC (~05:00-22:00 WIB).
+Three jobs need to run on a schedule. Nothing sends anything until they are
+scheduled — running the code once by hand only produces one scan.
 
-If that session/environment goes away, all three need to be scheduled some
-other way (cron on a VPS, GitHub Actions, etc.) — nothing here depends on
-Claude Code to run once scheduled with valid credentials. Confirmed
-working: this environment's filesystem (including `.env`, deliberately
-not in git) does survive being reclaimed after idling and resumed by a
-Routine fire — verified across several real scheduled runs, not just the
-initial manual test.
+| job | when | what it does |
+|---|---|---|
+| `src/job.js` | daily 21:30 UTC | stock scan + H-1 digest (macro, earnings, unlocks) |
+| `src/macroPing.js` | hourly | pings ~1h before a major macro release |
+| `src/cryptoJob.js` | hourly, 22:00-14:59 UTC | crypto scan (≈05:00-22:00 WIB waking hours) |
+
+During the build these ran as Claude Code Routines, which exist only in that
+environment. **On a VPS, use cron.** All three are plain Node scripts with no
+dependency on Claude Code:
+
+```cron
+# crontab -e  — times are UTC; set CRON_TZ or convert if your box is local time
+CRON_TZ=UTC
+BOT=/home/youruser/quant/notifier-bot
+
+30 21 * * *        cd $BOT && /usr/bin/node src/job.js       >> $BOT/cron.log 2>&1
+0  *  * * *        cd $BOT && /usr/bin/node src/macroPing.js >> $BOT/cron.log 2>&1
+0  22,23,0-14 * * * cd $BOT && /usr/bin/node src/cryptoJob.js >> $BOT/cron.log 2>&1
+```
+
+Notes that will save you an evening:
+
+- **`cd` into the bot directory first.** `.env` and the `data/` state files
+  are resolved relative to the package, and cron's working directory is not.
+- **Use an absolute `node` path.** Cron's `PATH` is minimal; `which node` on
+  the box gives the right value (`nvm` installs are typically under
+  `~/.nvm/versions/node/*/bin/node`).
+- **The crypto window wraps midnight**, hence `22,23,0-14` rather than a
+  range. That is ≈05:00-22:00 WIB (UTC+7).
+- Deduplication is per-day and file-backed (`data/.crypto-alert-dedup.json`,
+  `data/.macro-ping-state.json`), so an extra or repeated run is harmless —
+  it will not re-send the same alert.
+- Both hourly jobs exit silently on a quiet hour. Empty output is the normal
+  case, not a failure.
+
+Optional but recommended: point systemd or a healthcheck at `cron.log`, since
+a job that stops running is otherwise indistinguishable from a quiet market —
+the bot has no heartbeat of its own.

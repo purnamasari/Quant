@@ -331,6 +331,67 @@ ONDO are scanned and can produce normal alerts, but cannot trigger the rare
 tier until they have evidence. `DEFAULT_VALIDATION_UNIVERSE` is retained so
 every number published in this document stays reproducible.
 
+## News backtest — the effect runs opposite to intuition
+
+Google News RSS does serve date-bounded historical queries (`after:`/
+`before:`), which was assumed impossible earlier in this project. The initial
+HTTP 503s were transient rate limiting, not a block. `src/newsStore.js`
+caches every window to disk permanently; `src/analysis/newsBacktest.js` runs
+the analysis. Corpus: 416 weekly windows across BTC/BNB/SOL/ETH, ~2 years,
+3.7MB committed to `data/news-cache/`.
+
+Volume is z-scored per coin — raw counts are not comparable when Bitcoin
+outdraws everything else by an order of magnitude.
+
+### H1 — news volume as a filter on cup-forming: quieter is better
+
+| news intensity | trades | win rate | avgR |
+|---|---|---|---|
+| all signals (baseline) | 98 | 66.3% | 0.435 |
+| **quiet (z < 0)** | 71 | **71.8%** | **0.508** |
+| normal (0-1) | 20 | 55.0% | 0.288 |
+| busy (1-2) | 7 | 42.9% | 0.103 |
+| very busy (z ≥ 2) | 0 | - | - |
+
+Monotonic across every bucket, which is more convincing than a single
+standout cell. The reading: cup-forming is a structural setup, and when it
+fires amid heavy coverage the move is likely already news-driven and crowded,
+swamping the technical edge. Quiet setups are the clean ones.
+
+**Not implemented, and the reason matters.** The effect is directionally
+clean but statistically thin: the split is 71 quiet trades versus 27
+non-quiet, and a ~0.27R gap at n=27 is roughly one standard error. That is
+suggestive, not established. Under this project's own rules that is not
+enough to change what gets alerted.
+
+One thing strengthens it, though. 194 of 416 weekly windows hit Google's
+~100-item ceiling, so daily counts inside those weeks are undercounted and
+some genuinely busy days were classified as normal or quiet. **That
+censoring dilutes the measured effect rather than manufacturing it** — the
+true gradient is probably steeper than the table shows. (Note the script's
+own censoring check reports 0/2772 days at the cap; that is measuring the
+wrong level. Capping happens at the weekly fetch, not the daily bucket.)
+
+### H2 — news spike alone: negative, on every coin
+
+| | trades | win rate | avgR |
+|---|---|---|---|
+| all | 95 | 44.2% | **-0.122** |
+| BTC | 15 | 66.7% | -0.037 |
+| BNB | 32 | 31.3% | -0.306 |
+| SOL | 29 | 41.4% | -0.013 |
+| ETH | 19 | 52.6% | -0.045 |
+
+Entering on a coverage spike with no price signal is negative on all four
+coins independently. **This directly answers the "trade price action after
+news" idea: as a standalone entry trigger it does not work here.** Consistency
+across four separate assets makes this the more trustworthy of the two
+results, despite the modest total sample.
+
+Taken together the two hypotheses point the same way: news coverage is a
+headwind for this setup, not a tailwind. The actionable version is the
+opposite of the original idea — prefer quiet setups, be wary of loud ones.
+
 ## Known gaps (not done tonight, be aware before trusting this fully)
 
 - No Jaccard/correlation redundancy check for crypto signals (only done for
