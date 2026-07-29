@@ -52,6 +52,7 @@ function sleep(ms) {
 async function scanCrypto() {
   const universe = cryptoUniverse.getUniverse();
   const alerts = [];
+  const failures = [];
   for (const symbol of universe) {
     try {
       const candles = await getDailyCandles(symbol, 300);
@@ -96,17 +97,43 @@ async function scanCrypto() {
       }
     } catch (err) {
       console.error(`[cryptoJob] ${symbol} failed:`, err.message);
+      failures.push({ symbol, message: err.message });
     }
     await sleep(200);
   }
-  return alerts;
+  return { alerts, failures, scanned: universe.length };
 }
 
 async function main() {
   const startedAt = new Date();
-  const alerts = await scanCrypto();
-  console.log(`[cryptoJob] ${alerts.length} new alert(s) (after dedup) at ${nowStampWithWib(startedAt)}`);
-  if (!alerts.length) return; // most 15-min checks find nothing new — expected, no need to message
+  const { alerts, failures, scanned } = await scanCrypto();
+  const ok = scanned - failures.length;
+  console.log(
+    `[cryptoJob] ${alerts.length} new alert(s) (after dedup) at ${nowStampWithWib(startedAt)}` +
+    ` — ${ok}/${scanned} pairs scanned OK${failures.length ? `, ${failures.length} FAILED` : ''}`,
+  );
+
+  // A total data outage previously printed the same "0 new alert(s)" line as a
+  // healthy quiet scan, so under cron it would have been invisible — silence
+  // reads identically to "market was quiet". Surface it instead: notify once
+  // per day (reusing the alert dedup so an hours-long outage doesn't spam) and
+  // exit non-zero so a cron wrapper or healthcheck can see it.
+  if (failures.length === scanned && scanned > 0) {
+    console.error(`[cryptoJob] ALL ${scanned} pairs failed — treating as a data outage, not a quiet scan`);
+    if (shouldSend('_system', 'data-outage', 'error')) {
+      const reason = failures[0]?.message || 'unknown error';
+      await sendMessage(
+        `⚠️ <b>Crypto scan gagal total</b> — ${scanned}/${scanned} pair tidak bisa diambil datanya.\n\n` +
+        `Error: <code>${reason}</code>\n\n` +
+        `Ini biasanya rate limit OKX yang sementara dan pulih sendiri. Kalau alert ini muncul lagi besok, ` +
+        `berarti bukan transient — cek koneksi ke OKX dari server.`,
+      ).catch((err) => console.error('[cryptoJob] outage notice failed:', err.message));
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  if (!alerts.length) return; // most hourly checks find nothing new — expected
 
   const renderer = new ChartRenderer();
   try {

@@ -384,7 +384,13 @@ Notes that will save you an evening:
   it will not re-send the same alert.
 - Both hourly jobs exit silently on a quiet hour. Empty output is the normal
   case, not a failure.
+- `cryptoJob.js` distinguishes a quiet scan from a broken one. It logs
+  `12/12 pairs scanned OK`, and if *every* pair fails to fetch it treats that
+  as a data outage rather than a quiet market: exits non-zero and sends one
+  Telegram notice per day (deduped, so an hours-long outage doesn't spam).
+  This was added after a real OKX rate-limit episode produced twelve failures
+  that printed the same `0 new alert(s)` summary as a healthy run.
 
-Optional but recommended: point systemd or a healthcheck at `cron.log`, since
-a job that stops running is otherwise indistinguishable from a quiet market —
-the bot has no heartbeat of its own.
+Still worth adding: a healthcheck on `cron.log` or the exit codes. The bot
+now reports a *data* outage, but a job that stops being scheduled at all
+still looks identical to a quiet market.
