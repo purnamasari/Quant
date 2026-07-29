@@ -404,3 +404,53 @@ opposite of the original idea — prefer quiet setups, be wary of loud ones.
   may differ.
 - Backtest ran against OKX price data, not Binance (see okx.js header
   comment) — Binance itself returned HTTP 451 from this environment.
+
+## News scalping — measured, no edge found
+
+Tested at the user's request: not "can the number be predicted" (consensus is
+already the best available forecast) but "once it is public, is there a move
+left that a human can capture". `src/analysis/newsScalpBacktest.js`,
+`src/analysis/eventStudy.js`. 36 surprise releases, BTC 1m candles, 75 weekdays.
+
+The intuition that HFT eats everything turned out to be **wrong**: only ~14%
+of the 60-minute move occurs in the first minute, and the median release-minute
+range is 0.09%, so the spread does not blow out as violently as assumed. That
+part is a genuine finding.
+
+But nothing built on it survives a significance check:
+
+| measure | value | t |
+|---|---|---|
+| move at +60m, signed by expected direction | +0.185% (sd 0.62) | 1.80 |
+| entry +1m vs entry +5m | difference 0.053% | **0.39** |
+
+Both are inside noise. An earlier draft of this analysis reported "entering
+later is better" as a result — it is not, and the claim was withdrawn. The
+dispersion (sd 0.62%) is more than three times the mean, and 50% of first-
+minute directions reverse by +60m.
+
+The tempting cell is CPI: +1.027% at +60m with a 100% hit rate. It is n=3, and
+"core cpi" at n=2 shows identical figures because those are the same release
+double-counted — see the simultaneous-release confound below. Three coin flips
+landing heads is not a strategy, and treating it as one would break the same
+standard used to reject pairs trading and the swing stop.
+
+**Simultaneous-release confound.** US releases cluster at 08:30 ET, so several
+share a minute and each is credited with the identical price path. On
+2026-07-17 Core Retail Sales and Initial Jobless Claims released together with
+OPPOSITE implied directions — the same move recorded once as a win and once as
+a loss. Events now carry `simultaneousWith` and `directionConflict` so analysis
+can exclude or group them rather than averaging an invented coin flip.
+
+**Not implemented.** If an edge does exist here it is not scalp-shaped: the
+early minutes are a whipsaw, and any signal lives at the hour horizon, which is
+short-swing territory. Extending the harvest to two years would give CPI, NFP
+and FOMC usable sample sizes — `npm run events:harvest -- 730`. Until then the
+honest statement is that no effect was measurable, not that a small one exists
+below costs.
+
+Worth stating separately: "wait for the candle to look clean" cannot be tested
+as stated. It has to be a mechanical rule first (e.g. "the first 1m bar whose
+range is below the trailing 20-bar median and which closes with the expected
+direction"), or it is unfalsifiable — a filter that only looks clean in
+hindsight can never be wrong, and can never be validated either.
