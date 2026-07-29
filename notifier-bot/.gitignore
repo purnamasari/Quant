@@ -11,3 +11,8 @@ data/alert-log.json
 # Google News re-ranks and drops items over time, so re-fetching later yields
 # a different corpus — committing the cache is what keeps the news backtest
 # numbers reproducible, and it saves ~10 minutes of rate-limited requests.
+
+# Cached OKX candles + signal dates for the Python analysis layer.
+# Committed on purpose: refetching costs ~20 minutes of rate-limited requests
+# and the candles are immutable history, so caching them makes every analysis
+# reproducible and instant. 1.7MB.
