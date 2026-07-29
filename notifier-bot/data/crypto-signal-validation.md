@@ -92,6 +92,43 @@ star.** This is the clearest demonstration yet in this bot of why
 thresholds/signals don't automatically transfer across asset classes —
 worth remembering before assuming anything else does either.
 
+## Entry refinement (15m pullback/breakout) — investigated, NOT implemented
+
+At the user's request, tested whether waiting for a 15m EMA9 pullback
+bounce or a 15m range-breakout confirmation (instead of entering
+immediately at the daily signal's close) improves results —
+`src/analysis/cryptoEntryRefinement.js`.
+
+**First pass had a look-ahead bug**: OKX daily candle `time` is the OPEN
+timestamp, not close (verified: the still-forming candle's time is up to
+24h in the past). The search window used `daily[i].time` as its start,
+which is a full day too early — overlapping the signal day itself before
+it even closed. That run showed dramatic-looking wins (e.g. volume-surge
+baseline 1.1% → pullback 6.0%) that were an artifact of this bug, not a
+real edge.
+
+**After fixing it** (`sessionStart = daily[i+1].time`) and re-running —
+this time only BTC-USDT's data came through (OKX returned HTTP 503 for
+the other 6 pairs, likely rate-limited from repeated backtest runs) — the
+apparent edge mostly disappeared:
+
+| kind | baseline | pullback | breakout |
+|---|---|---|---|
+| ma-alignment | 0.12% | 0.09% | 0.00% |
+| near-52w-high | 0.03% | 0.09% | -0.04% |
+| volume-surge | -0.09% | -0.29% | -0.36% |
+| cup-forming | 0.03% | 0.02% | 0.19% |
+
+**Conclusion: not implemented.** Entering immediately at the daily
+signal's close (the existing behavior) is not clearly beaten by waiting
+for a lower-timeframe pullback or breakout, once the timing bug is fixed.
+Worth re-running across the full pair set once OKX stops 503ing to get a
+more complete answer, but a single major pair (BTC) already showed the
+effect essentially vanish, so expectations should stay low. `src/risk.js`
+gained an `entryOverride` param and `src/cryptoEntryTrigger.js` exists as
+reusable infra if this gets revisited later — neither is wired into
+`cryptoJob.js`.
+
 ## Known gaps (not done tonight, be aware before trusting this fully)
 
 - No Jaccard/correlation redundancy check for crypto signals (only done for
