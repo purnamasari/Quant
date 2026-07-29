@@ -4,6 +4,16 @@ State at handover, and what is worth doing next. Ordered by value, not by
 effort. Read `AGENTS.md` first — several items below are only worth doing if
 they go through the validation pipeline described there.
 
+## Execution bot (new scope)
+
+A Telegram-approved execution bot on Binance, with protections, a monitoring
+Web App and a journal, is planned in **TRADING_BOT_PLAN.md** with a task
+breakdown in **TASKS.md**. Read the plan's §1 first — the ML goal in that
+request is not reachable at this signal frequency for years, and the AI
+reviewer is scoped as a journaling aid rather than an advisor.
+
+The research items below remain valid and are independent of that work.
+
 ## Highest value — a live lead, one step from actionable
 
 ### 1. Confirm the "quiet setups outperform" effect, then implement it
