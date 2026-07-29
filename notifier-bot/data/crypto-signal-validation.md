@@ -187,6 +187,77 @@ wider set). If more alert volume is wanted later, the safer path is
 validating specific additional large-cap-quality symbols individually with
 a longer history, not batch-adding mid-caps for volume's sake.
 
+## Pairs trading — tested as a side strategy, REJECTED
+
+Proposed because it is the one candidate whose alpha does not come from the
+same beta-to-BTC factor every other signal here shares: long the
+underperformer, short the outperformer on the log spread, betting the
+relationship reasserts itself. `src/analysis/pairsTrading.js`.
+
+Methodology, with the anti-fooling-yourself steps that this strategy
+specifically needs:
+
+- **Multiple testing.** 12 assets = 45 usable pairs. Pairs were SELECTED on
+  the first half of history (correlation > 0.5 and profitable in-sample) and
+  TRADED only on the second half. Only the out-of-sample number counts.
+- **Parameter overfitting.** A lookback x entry-z grid was swept and every
+  cell reported, never just the best.
+- **Cost.** Two legs = double fees; 0.5% round trip applied throughout, then
+  stress-tested further.
+
+### On the 12 large-caps it looked real
+
+Out-of-sample, selected pairs, 0.5% cost: **+1.363% net per trade, 61.0% win
+rate**, median hold ~12 days. And it passed the checks that usually kill a
+result:
+
+- **Parameter plateau, not a spike.** The whole block lookback 28-35 x entry-z
+  2.4-2.6 is positive (12 of 12 cells, +0.35% to +2.24%). An artifact
+  normally lives in one isolated cell.
+- **Stable across an OOS time-split:** +2.266% (first half) vs +2.211%
+  (second half).
+- **Not outlier-driven:** removing the three biggest winners still leaves
+  +1.309%.
+- **Cost breakeven at ~1.86% round trip** — far above the realistic ~0.2-0.5%
+  for major perps.
+
+### The out-of-universe test killed it
+
+The one warning sign was concentration: only 8/14 selected pairs were
+positive, and the winners clustered on pairs involving LTC and DOGE. So the
+same plateau parameters were run on the 18 mid-cap pairs never used anywhere
+in this analysis (153 pairs, n=6292 — eight times the data):
+
+| universe | trades | win rate | net/trade | gross (no cost) |
+|---|---|---|---|---|
+| 12 large-caps | 785 | 61.0% | **+1.363%** | +1.863% |
+| 18 mid-caps | 6292 | 50.1% | **-1.765%** | **-1.265%** |
+
+Negative *before costs*, at a 50.1% win rate — a coin flip — on the far larger
+sample. Only 29/91 selected pairs positive. The worst pairs are exactly what
+theory predicts when mean reversion is the wrong model: NEAR/APT -14.5%,
+APT/INJ -17.4% — one asset kept diverging and the reversion bet kept paying
+for it.
+
+### Why, and the lesson
+
+**Survivorship bias is the most likely explanation.** The 12-pair universe is
+today's surviving large-caps. A strategy that systematically longs the
+*underperformer* is precisely the one this bias inflates: every asset in that
+universe recovered from its drawdowns, because assets that permanently
+de-rated are not in the list. Crypto assets do not oscillate around a stable
+equilibrium — they trend and re-rate permanently, and the pairs that prove it
+are the ones missing from a survivor-selected watchlist.
+
+**Methodological lesson worth keeping:** parameter robustness is necessary but
+not sufficient. This result had a clean plateau, a stable time-split, and
+outlier-resistance — every within-universe check passed — and was still an
+artifact of *which assets were in the universe*. Only an out-of-universe test
+exposed it. That test should now be standard before enabling anything.
+
+**Not implemented.** `src/analysis/pairsTrading.js` is kept as the record and
+as reusable infrastructure; nothing references it from the live alert path.
+
 ## Known gaps (not done tonight, be aware before trusting this fully)
 
 - No Jaccard/correlation redundancy check for crypto signals (only done for
