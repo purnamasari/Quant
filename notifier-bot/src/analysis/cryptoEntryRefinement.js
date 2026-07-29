@@ -27,7 +27,8 @@ const FIFTEEN_MIN_SECONDS = 15 * 60;
 const SEARCH_WINDOW_BARS = 96; // 1 day of 15m bars
 const HOLD_BARS = 192; // ~2 days of 15m bars
 
-function summarize(returns) {
+function summarize(timedReturns) {
+  const returns = timedReturns.map((r) => r.value);
   const n = returns.length;
   if (!n) return { trades: 0, winRate: null, expectancy: null };
   const wins = returns.filter((r) => r > 0);
@@ -40,6 +41,13 @@ function summarize(returns) {
     winRate: Math.round(winRate * 10) / 10,
     avgReturn: Math.round((returns.reduce((a, b) => a + b, 0) / n) * 100) / 100,
     expectancy: Math.round(((winRate / 100) * avgWin - (1 - winRate / 100) * Math.abs(avgLoss)) * 100) / 100,
+  };
+}
+
+function splitHalves(timedReturns, midpoint) {
+  return {
+    first: timedReturns.filter((r) => r.time < midpoint),
+    second: timedReturns.filter((r) => r.time >= midpoint),
   };
 }
 
@@ -112,8 +120,8 @@ async function run({ days15m = 60, symbols = null, log = console.log } = {}) {
 
         if (!baselineReturns[kind]) baselineReturns[kind] = [];
         if (!refinedReturns[kind]) refinedReturns[kind] = [];
-        baselineReturns[kind].push(baselineReturn);
-        refinedReturns[kind].push(refinedReturn);
+        baselineReturns[kind].push({ time: sessionStart, value: baselineReturn });
+        refinedReturns[kind].push({ time: sessionStart, value: refinedReturn });
       }
     }
   }
@@ -125,14 +133,22 @@ if (require.main === module) {
   const days15m = Number(process.argv[2]) || 60;
   run({ days15m }).then(({ symbolsUsed, baselineReturns, refinedReturns, missedCount, totalSetups }) => {
     console.log(`\nCrypto entry refinement test (~${days15m}d window, 15m entry) — ${symbolsUsed} pairs\n`);
+    const midpoint = Math.floor(Date.now() / 1000) - (days15m / 2) * 86400;
     for (const kind of TEST_KINDS) {
       const total = totalSetups[kind] || 0;
       const missed = missedCount[kind] || 0;
       const filled = total - missed;
       console.log(`--- ${kind} ---`);
       console.log(`  setups: ${total}, filled: ${filled} (${total ? Math.round((filled / total) * 1000) / 10 : 0}%), missed: ${missed}`);
-      console.log(`  baseline (enter at signal close):     ${JSON.stringify(summarize(baselineReturns[kind] || []))}`);
-      console.log(`  refined  (enter at 15m EMA9 bounce):   ${JSON.stringify(summarize(refinedReturns[kind] || []))}`);
+      console.log(`  baseline (all):     ${JSON.stringify(summarize(baselineReturns[kind] || []))}`);
+      console.log(`  refined  (all):     ${JSON.stringify(summarize(refinedReturns[kind] || []))}`);
+
+      const bHalves = splitHalves(baselineReturns[kind] || [], midpoint);
+      const rHalves = splitHalves(refinedReturns[kind] || [], midpoint);
+      console.log(`  baseline 1st half:  ${JSON.stringify(summarize(bHalves.first))}`);
+      console.log(`  baseline 2nd half:  ${JSON.stringify(summarize(bHalves.second))}`);
+      console.log(`  refined  1st half:  ${JSON.stringify(summarize(rHalves.first))}`);
+      console.log(`  refined  2nd half:  ${JSON.stringify(summarize(rHalves.second))}`);
     }
   }).catch((err) => {
     console.error(err);
