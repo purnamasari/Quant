@@ -34,4 +34,35 @@ function formatImpactBlock(eventName) {
   ].join('\n');
 }
 
-module.exports = { findImpact, formatImpactBlock };
+// The H-1 ping lists both branches ("if higher... if lower..."); this is the
+// after-the-fact counterpart that says which one actually happened. Same
+// table, so the follow-up is guaranteed consistent with what was promised
+// beforehand rather than a second, independently-worded opinion.
+//
+// `direction` is 'higher' | 'lower' | 'inline'. Inline gets no branch text on
+// purpose: when a release lands on consensus the textbook reaction is
+// "already priced in", and printing the higher- or lower-than scenario there
+// would assert a move the data does not support.
+function formatOutcomeBlock(eventName, direction) {
+  const impact = findImpact(eventName);
+  if (!impact) return null;
+  if (direction === 'inline') {
+    return [
+      `<b>Sesuai konsensus (${impact.label})</b> — biasanya reaksi paling kecil, karena sudah priced in.`,
+      'Yang lebih menentukan justru revisi data sebelumnya dan detail di dalam rilisnya.',
+      '',
+      `⚠️ ${impact.caveat}`,
+    ].join('\n');
+  }
+  const branch = direction === 'higher' ? impact.higher : impact.lower;
+  const label = direction === 'higher' ? 'Lebih tinggi dari konsensus' : 'Lebih rendah dari konsensus';
+  return [
+    `<b>${label} (${impact.label})</b>`,
+    `📈 Saham: ${branch.stocks}`,
+    `🪙 Crypto: ${branch.crypto}`,
+    '',
+    `⚠️ ${impact.caveat}`,
+  ].join('\n');
+}
+
+module.exports = { findImpact, formatImpactBlock, formatOutcomeBlock };
