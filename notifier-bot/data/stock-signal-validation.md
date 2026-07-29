@@ -151,6 +151,38 @@ against strength. **Not implemented in the live alerts** — entering
 immediately when the daily signal confirms remains what the data
 supports.
 
+## SMC signals (Order Block / FVG / BoS) — ported from a TradingView indicator
+
+At the user's request, the exact Pine Script source of "Super OrderBlock /
+FVG / BoS Tools by makuchaku & eFe" (TradingView, MPL-2.0, pasted in full
+by the user) was ported to JS — see `src/smc.js` for the line-by-line
+mapping. This is a faithful port of the actual boolean conditions, not a
+generic reinterpretation. Rejection Blocks and the PPDD liquidity-sweep OB
+variant were not ported (lower priority, more parameters).
+
+10-year backtest, 2-day hold:
+
+| kind | 10y expectancy | trades | stable both 5y halves? | cost-adjusted (both halves) |
+|---|---|---|---|---|
+| **ob-bullish** | 0.21% | 19,928 | ✅ 0.26%→0.17% | ✅ **0.11%/0.02% — stays positive** |
+| bos-bullish | 0.16% | 20,058 | ✅ 0.21%→0.10% | ❌ 0.06%→**-0.05%** |
+| fvg-bullish | 0.15% | 40,370 | ✅ 0.21%→0.09% | ❌ 0.06%→**-0.06%** |
+| bos-bearish | -0.13% | 15,338 | negative both | -0.33%/-0.24% |
+| fvg-bearish | -0.14% | 29,234 | negative both | -0.24%/-0.33% |
+| ob-bearish | -0.17% | 17,171 | negative both | -0.31%/-0.33% |
+
+**`ob-bullish` is the strongest signal found in this entire bot** — it's
+the only one (including all the originally-validated kinds) that stays
+positive after cost in BOTH 5-year halves. Jaccard correlation against
+momentum/cup-forming/golden-cross/macd-bullish/ma-alignment/vcp/near-52w-high
+is consistently under 0.1, confirming it's independent information, not a
+redundant restatement. **Added to `alertStockKinds`.**
+
+`fvg-bullish` and `bos-bullish` look decent on raw numbers but show the
+same cost-adjusted sign-flip instability as mean-reversion/volume-surge
+did earlier — not enabled. All three bearish SMC variants are negative,
+consistent with every other bearish signal in this bot.
+
 ## Reading: what this means for the alert filter
 
 The four highest-expectancy kinds (mean-reversion, golden-cross, volume-surge,

@@ -31,6 +31,31 @@ one pre-installed at `/opt/pw-browsers` in the Claude Code environment
 (`src/chart.js` auto-detects it). Self-hosting elsewhere: either keep that
 same layout or run `npx playwright install chromium` once.
 
+## SMC (Order Block / FVG / BoS) — ported from a real TradingView indicator
+
+At the user's request, `src/smc.js` is a faithful port of the exact Pine
+Script logic from "Super OrderBlock / FVG / BoS Tools by makuchaku & eFe"
+(TradingView, MPL-2.0) — not a generic reinterpretation, the actual
+boolean conditions the user pasted in full. Backtested the same way as
+everything else:
+
+- **`ob-bullish` (stock) is the strongest signal in this whole bot** —
+  the only one that stays positive after a cost assumption in BOTH 5-year
+  test halves. Added to `alertStockKinds`.
+- **`bos-bullish` (crypto)** — different result on crypto than stocks;
+  added to `alertCryptoKinds`.
+- **`ob-bullish` on crypto is negative** despite being the stock star —
+  deliberately not enabled there. Yet another reminder these don't
+  transfer across asset classes.
+- `fvg-bullish`/`bos-bullish` (stock) and everything bearish — tested,
+  not enabled (unstable or negative). See
+  `data/stock-signal-validation.md` / `data/crypto-signal-validation.md`
+  for the full numbers.
+
+Rejection Blocks and the PPDD liquidity-sweep OB variant from the
+original indicator were not ported (lower priority, more parameters to
+get right).
+
 ## Long AND short, with a caveat
 
 Every signal kind now carries a `direction: 'long' | 'short'`. Bearish

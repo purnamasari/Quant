@@ -55,6 +55,8 @@ function push(signals, kind, label, score, detail, tone = 'bullish', direction =
   signals.push({ kind, label, score, detail, tone, direction });
 }
 
+const { detectOB, detectFVG, detectBoS } = require('../smc');
+
 function buildSignalMetrics(candles) {
   const current = last(candles);
   const previous = candles.length > 1 ? candles[candles.length - 2] : null;
@@ -246,6 +248,34 @@ function detectStockSignals(candles) {
 
   if (metrics.volumeRatio20 !== null && metrics.volumeRatio20 >= 1.75 && prev && latest.close < prev.close) {
     push(signals, 'volume-surge-down', 'Volume surge (down)', 13, `Volume is ${metrics.volumeRatio20}x the 20-day average on a down close.`, 'hot', 'short');
+  }
+
+  // --- SMC: Order Block / Fair Value Gap / Break of Structure ---
+  // Ported from the TradingView Pine Script the user provided — see
+  // src/smc.js for the exact mapping to the original conditions.
+  const ob = detectOB(clean);
+  if (ob) {
+    push(
+      signals, ob.kind, ob.kind === 'ob-bullish' ? 'Order Block (bullish)' : 'Order Block (bearish)', 12,
+      `${ob.kind === 'ob-bullish' ? 'Bullish' : 'Bearish'} order block formed (zone ${round(ob.bottom)}-${round(ob.top)}).`,
+      'watch', ob.direction,
+    );
+  }
+  const fvg = detectFVG(clean);
+  if (fvg) {
+    push(
+      signals, fvg.kind, fvg.kind === 'fvg-bullish' ? 'Fair Value Gap (bullish)' : 'Fair Value Gap (bearish)', 10,
+      `${fvg.kind === 'fvg-bullish' ? 'Bullish' : 'Bearish'} FVG opened (gap ${round(fvg.bottom)}-${round(fvg.top)}).`,
+      'watch', fvg.direction,
+    );
+  }
+  const bos = detectBoS(clean);
+  if (bos) {
+    push(
+      signals, bos.kind, bos.kind === 'bos-bullish' ? 'Break of Structure (bullish)' : 'Break of Structure (bearish)', 14,
+      `Close ${bos.kind === 'bos-bullish' ? 'broke above' : 'broke below'} the last swing ${bos.kind === 'bos-bullish' ? 'high' : 'low'} at ${round(bos.level)}.`,
+      'watch', bos.direction,
+    );
   }
 
   const bestByKind = new Map();

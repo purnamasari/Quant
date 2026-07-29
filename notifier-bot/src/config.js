@@ -46,17 +46,28 @@ module.exports = {
   // round-trip cost was assumed — they were riding the recent bull run, not
   // a real edge. momentum/cup-forming/golden-cross were the only kinds
   // that stayed positive across both halves AND after cost.
+  // ob-bullish (Order Block, ported from a TradingView SMC indicator, see
+  // src/smc.js) added after it beat momentum/cup-forming/golden-cross on
+  // every test: stable across both 5y halves, stays positive after cost in
+  // BOTH halves (0.11%/0.02%, where others go flat-to-negative), and low
+  // redundancy (<0.1 Jaccard) with the existing three.
   alertStockKinds: csv(process.env.ALERT_STOCK_KINDS).length
     ? csv(process.env.ALERT_STOCK_KINDS)
-    : ['momentum', 'cup-forming', 'golden-cross'],
+    : ['momentum', 'cup-forming', 'golden-cross', 'ob-bullish'],
   // Deliberately different from stock defaults — see
   // data/crypto-signal-validation.md: golden-cross/cup-handle back-tested
   // negative on crypto even though they were among the best on stocks.
   // Re-checked with a 0.25% round-trip cost assumption in the improvement
   // pass — all four stay comfortably positive (0.44%-0.91%), unlike the
   // original stock picks which didn't survive their own cost check.
+  // bos-bullish (Break of Structure, same src/smc.js port) added for
+  // crypto after cost-adjusted backtest (0.52%, n=464) and low redundancy
+  // (<0.15 Jaccard) with the other four. NOTE: ob-bullish — the best
+  // performer on stocks — tested NEGATIVE on crypto (-0.64%), so it's
+  // deliberately NOT added here. Another reminder these don't transfer
+  // across asset classes.
   alertCryptoKinds: csv(process.env.ALERT_CRYPTO_KINDS).length
     ? csv(process.env.ALERT_CRYPTO_KINDS)
-    : ['ma-alignment', 'near-52w-high', 'volume-surge', 'cup-forming'],
+    : ['ma-alignment', 'near-52w-high', 'volume-surge', 'cup-forming', 'bos-bullish'],
   earningsGuardDays: Number(process.env.EARNINGS_GUARD_DAYS || 3),
 };

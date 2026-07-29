@@ -68,6 +68,30 @@ candle-close conventions between exchanges rather than a broken feed. Not
 alarming, but a reminder that OKX-sourced signals could occasionally fire
 a day earlier/later than the same pattern would on Binance itself.
 
+## SMC signals (Order Block / FVG / BoS) — same port as stocks, different result
+
+Same `src/smc.js` port tested on the 12-pair crypto universe (2y, 0.25%
+cost assumption):
+
+| kind | cost-adjusted expectancy | trades |
+|---|---|---|
+| **bos-bullish** | **0.52%** | 464 |
+| fvg-bullish | -0.28% | 694 |
+| bos-bearish | -0.45% | 502 |
+| ob-bullish | **-0.64%** | 509 |
+| ob-bearish | -0.74% | 521 |
+| fvg-bearish | -1.27% | 792 |
+
+**Important cross-market result:** `ob-bullish` was the single best signal
+found on stocks (see data/stock-signal-validation.md) but is clearly
+negative on crypto. `bos-bullish` — mediocre/unstable on stocks — is the
+one that works here instead, with low redundancy (<0.15 Jaccard) against
+the other four crypto defaults. **Added `bos-bullish` to
+`alertCryptoKinds`; did NOT add ob-bullish despite it being the stock
+star.** This is the clearest demonstration yet in this bot of why
+thresholds/signals don't automatically transfer across asset classes —
+worth remembering before assuming anything else does either.
+
 ## Known gaps (not done tonight, be aware before trusting this fully)
 
 - No Jaccard/correlation redundancy check for crypto signals (only done for
