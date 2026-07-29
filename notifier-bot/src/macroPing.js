@@ -8,6 +8,7 @@ const path = require('node:path');
 const { sendMessage } = require('./telegram');
 const { getMacroEventsForDate } = require('./macro');
 const { withWib } = require('./time');
+const { formatImpactBlock } = require('./macroImpact');
 
 const STATE_PATH = path.join(__dirname, '..', 'data', '.macro-ping-state.json');
 const PING_WINDOW_MINUTES = 70; // must be >= the polling interval (hourly) so no event is missed between checks
@@ -53,9 +54,13 @@ async function runMacroPing() {
     if (!eventTime) continue;
     const minutesUntil = (eventTime.getTime() - now.getTime()) / 60000;
     if (minutesUntil > 0 && minutesUntil <= PING_WINDOW_MINUTES) {
-      await sendMessage(
-        `⏰ <b>~1 jam lagi:</b> ${event.name}\n${withWib(event.time)}${event.consensus && event.consensus.trim() ? ` (consensus ${event.consensus})` : ''}`,
-      );
+      const impactBlock = formatImpactBlock(event.name);
+      const lines = [
+        `⏰ <b>~1 jam lagi:</b> ${event.name}`,
+        `${withWib(event.time)}${event.consensus && event.consensus.trim() ? ` (consensus ${event.consensus})` : ''}`,
+      ];
+      if (impactBlock) lines.push('', impactBlock);
+      await sendMessage(lines.join('\n'));
       state[key] = true;
       sent += 1;
     }

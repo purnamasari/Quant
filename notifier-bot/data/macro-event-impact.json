@@ -1,0 +1,93 @@
+[
+  {
+    "matches": ["CPI", "PCE", "PPI"],
+    "label": "Inflation data",
+    "higher": {
+      "stocks": "Biasanya bearish, terutama growth/tech — ekspektasi Fed lebih hawkish (rate cut mundur/hilang), yield naik menekan valuasi.",
+      "crypto": "Biasanya bearish — crypto diperlakukan pasar sebagai 'long duration risk asset', sensitif ke ekspektasi suku bunga sama seperti growth stock."
+    },
+    "lower": {
+      "stocks": "Biasanya bullish — ekspektasi rate cut naik, yield turun, valuasi growth/tech diuntungkan.",
+      "crypto": "Biasanya bullish — sama logikanya, ekspektasi likuiditas lebih longgar."
+    },
+    "caveat": "Kalau inflasi turun karena permintaan melemah/resesi mendekat (bukan karena membaik dengan sehat), reaksi bisa negatif meski angkanya 'bagus' — perhatikan narasi yang lagi dominan (inflation-scare vs growth-scare)."
+  },
+  {
+    "matches": ["Nonfarm", "Non-Farm", "Payroll", "Jobless Claims", "Unemployment Rate"],
+    "label": "Data ketenagakerjaan",
+    "higher": {
+      "stocks": "Dua sisi: kalau cuma sedikit di atas ekspektasi dalam narasi 'soft landing', ini bullish (ekonomi kuat = earnings bagus). Kalau jauh di atas ekspektasi, bisa bearish (Fed makin gak buru-buru cut, yield naik).",
+      "crypto": "Cenderung bearish kalau data terlalu kuat — mengurangi peluang rate cut yang selama ini jadi bahan bakar rally crypto."
+    },
+    "lower": {
+      "stocks": "Dua sisi juga: miss kecil = bullish (rate cut makin dekat). Miss besar/tiba-tiba = bearish (mulai muncul kekhawatiran resesi).",
+      "crypto": "Miss kecil biasanya bullish (ekspektasi cut naik). Miss besar bisa berbalik jadi bearish kalau narasi berubah ke 'resesi'."
+    },
+    "caveat": "Ini yang PALING dua sisi dari semua data makro — jangan asumsikan arahnya otomatis, cek dulu size deviasi dari konsensus dan narasi pasar saat itu (takut inflasi atau takut resesi?)."
+  },
+  {
+    "matches": ["FOMC", "Fed ", "Interest Rate", "Rate Decision"],
+    "label": "Keputusan Fed",
+    "higher": {
+      "stocks": "Kalau hasilnya hawkish (rate ditahan/naik, sinyal cut lebih sedikit dari yang diharapkan) → bearish, terutama growth/tech.",
+      "crypto": "Bearish — crypto salah satu aset paling sensitif ke ekspektasi likuiditas Fed."
+    },
+    "lower": {
+      "stocks": "Kalau hasilnya dovish (cut terjadi/disinyalkan, dot plot lebih banyak cut dari ekspektasi) → bullish.",
+      "crypto": "Bullish, biasanya reaksi crypto lebih besar dari saham untuk sinyal dovish yang sama."
+    },
+    "caveat": "'Buy the rumor, sell the news' sering terjadi di sini — reaksi pasar tergantung dibanding apa yang SUDAH di-price-in lewat Fed funds futures, bukan cuma keputusan headline-nya."
+  },
+  {
+    "matches": ["GDP", "Atlanta Fed GDPNow"],
+    "label": "Pertumbuhan ekonomi",
+    "higher": {
+      "stocks": "Bullish untuk saham siklikal/value (ekonomi kuat = earnings kuat), tapi bisa sedikit menekan growth stock kalau mengurangi peluang rate cut.",
+      "crypto": "Netral-ke-bearish kalau data kuat mengurangi ekspektasi cut."
+    },
+    "lower": {
+      "stocks": "Bearish across the board kalau memicu kekhawatiran resesi — tapi bisa bullish kalau cuma menaikkan ekspektasi rate cut tanpa memicu panic resesi.",
+      "crypto": "Sama, tergantung apakah dibaca sebagai 'growth scare' (bearish) atau 'rate cut akan datang' (bullish)."
+    },
+    "caveat": "Reaksinya paling tergantung konteks — data lemah di tengah narasi 'Fed akan segera cut' beda jauh efeknya dibanding data lemah saat semua orang mulai takut resesi."
+  },
+  {
+    "matches": ["ISM", "PMI"],
+    "label": "Survei manufaktur/jasa",
+    "higher": {
+      "stocks": "Bullish, terutama saham siklikal/industrial — sinyal ekspansi ekonomi.",
+      "crypto": "Netral-ke-bullish sebagai proxy 'risk-on' sentiment."
+    },
+    "lower": {
+      "stocks": "Bearish, terutama kalau di bawah 50 (kontraksi) — sinyal perlambatan ekonomi.",
+      "crypto": "Netral-ke-bearish, ikut sentiment risk-off."
+    },
+    "caveat": "Dampaknya biasanya lebih ringan/singkat dibanding CPI atau NFP — bukan data penggerak besar kecuali hasilnya sangat ekstrem dari konsensus."
+  },
+  {
+    "matches": ["Retail Sales"],
+    "label": "Penjualan ritel",
+    "higher": {
+      "stocks": "Bullish untuk saham consumer discretionary, tapi bisa sedikit menekan ekspektasi rate cut kalau terlalu kuat.",
+      "crypto": "Netral, dampak tidak langsung lewat ekspektasi Fed."
+    },
+    "lower": {
+      "stocks": "Bearish untuk saham consumer, tapi bisa menaikkan ekspektasi rate cut (bullish untuk sektor lain).",
+      "crypto": "Netral-ke-bullish kalau mendorong ekspektasi cut naik."
+    },
+    "caveat": "Dampak paling terasa di sektor consumer discretionary spesifik, bukan pasar secara luas."
+  },
+  {
+    "matches": ["Consumer Confidence"],
+    "label": "Kepercayaan konsumen",
+    "higher": {
+      "stocks": "Sedikit bullish — sinyal belanja konsumen tetap kuat.",
+      "crypto": "Netral, dampak tidak langsung dan biasanya kecil."
+    },
+    "lower": {
+      "stocks": "Sedikit bearish untuk saham consumer.",
+      "crypto": "Netral, dampak tidak langsung dan biasanya kecil."
+    },
+    "caveat": "Salah satu data makro dengan dampak pasar paling ringan/singkat dari daftar ini."
+  }
+]

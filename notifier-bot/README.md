@@ -83,6 +83,16 @@ macro release landing in the next ~70 minutes, tracked in
 `data/.macro-ping-state.json` so it doesn't repeat. Most hourly checks
 find nothing to send, which is expected.
 
+Each ping also includes a scenario explanation (`src/macroImpact.js`,
+data in `data/macro-event-impact.json`): what a higher-than-consensus vs
+lower-than-consensus print typically means for stocks and crypto,
+per event category (CPI/PCE/PPI, NFP/jobless claims, FOMC, GDP, ISM,
+retail sales, consumer confidence). This is a simplified textbook
+heuristic, not a forecast — jobs/growth data in particular is genuinely
+two-sided (a strong number can be bullish "soft landing" or bearish
+"Fed won't cut" depending on which narrative the market is in that week),
+and every entry says so explicitly rather than pretending otherwise.
+
 ## Charts
 
 Each alert is preceded by a candlestick chart (last 60 daily candles) with
@@ -137,6 +147,8 @@ you that — it would need an actual always-on server with a webhook.
 - `src/time.js` — UTC → WIB conversion helpers.
 - `src/macroPing.js` — hourly "macro event ~1h away" check, run by a
   separate Routine from the daily `job.js`.
+- `src/macroImpact.js` — looks up `data/macro-event-impact.json` for the
+  higher/lower-than-consensus scenario explanation attached to each ping.
 - `src/chart.js` — Playwright-based candlestick chart renderer.
 - `src/tracking.js` — FOLLOW/SKIP button logging (delayed, see above).
 - `data/stock-signal-validation.md`, `data/crypto-signal-validation.md` —
