@@ -26,6 +26,7 @@ const TEST_KINDS = ['ma-alignment', 'near-52w-high', 'volume-surge', 'cup-formin
 const FIFTEEN_MIN_SECONDS = 15 * 60;
 const SEARCH_WINDOW_BARS = 96; // 1 day of 15m bars
 const HOLD_BARS = 192; // ~2 days of 15m bars
+const BREAKOUT_LOOKBACK = 20; // ~5 hours of 15m bars for the range high
 
 function summarize(timedReturns) {
   const returns = timedReturns.map((r) => r.value);
@@ -55,7 +56,9 @@ async function run({ days15m = 60, symbols = null, log = console.log } = {}) {
   const universe = symbols || (config.cryptoWatchlist.length ? config.cryptoWatchlist : getUniverse());
   const baselineReturns = {};
   const refinedReturns = {};
+  const breakoutReturns = {};
   const missedCount = {};
+  const breakoutMissedCount = {};
   const totalSetups = {};
   let symbolsUsed = 0;
 
@@ -106,49 +109,80 @@ async function run({ days15m = 60, symbols = null, log = console.log } = {}) {
           }
         }
 
-        if (entryIdx === null) {
+        if (entryIdx !== null) {
+          const exitIdx = Math.min(fine.length - 1, entryIdx + HOLD_BARS);
+          if (exitIdx > entryIdx) {
+            const refinedEntry = fine[entryIdx].close;
+            const refinedExit = fine[exitIdx].close;
+            if (refinedEntry > 0) {
+              const refinedReturn = ((refinedExit - refinedEntry) / refinedEntry) * 100;
+              if (!baselineReturns[kind]) baselineReturns[kind] = [];
+              if (!refinedReturns[kind]) refinedReturns[kind] = [];
+              baselineReturns[kind].push({ time: sessionStart, value: baselineReturn });
+              refinedReturns[kind].push({ time: sessionStart, value: refinedReturn });
+            }
+          }
+        } else {
           missedCount[kind] = (missedCount[kind] || 0) + 1;
-          continue;
         }
 
-        const exitIdx = Math.min(fine.length - 1, entryIdx + HOLD_BARS);
-        if (exitIdx <= entryIdx) continue;
-        const refinedEntry = fine[entryIdx].close;
-        const refinedExit = fine[exitIdx].close;
-        if (!(refinedEntry > 0)) continue;
-        const refinedReturn = ((refinedExit - refinedEntry) / refinedEntry) * 100;
-
-        if (!baselineReturns[kind]) baselineReturns[kind] = [];
-        if (!refinedReturns[kind]) refinedReturns[kind] = [];
-        baselineReturns[kind].push({ time: sessionStart, value: baselineReturn });
-        refinedReturns[kind].push({ time: sessionStart, value: refinedReturn });
+        // Breakout-entry variant: first 15m bar in the same window whose
+        // close exceeds the highest high of the prior BREAKOUT_LOOKBACK
+        // bars — confirms continuation instead of waiting for a dip. Asked
+        // specifically because cup-forming (a breakout pattern) got WORSE
+        // with the pullback-wait approach above.
+        let breakoutIdx = null;
+        for (let j = 0; j < fine.length; j++) {
+          if (fine[j].time < sessionStart || fine[j].time >= sessionEnd) continue;
+          if (j < BREAKOUT_LOOKBACK) continue;
+          const rangeHigh = Math.max(...fine.slice(j - BREAKOUT_LOOKBACK, j).map((c) => c.high));
+          if (fine[j].close > rangeHigh) {
+            breakoutIdx = j;
+            break;
+          }
+        }
+        if (breakoutIdx !== null) {
+          const exitIdx = Math.min(fine.length - 1, breakoutIdx + HOLD_BARS);
+          if (exitIdx > breakoutIdx) {
+            const bEntry = fine[breakoutIdx].close;
+            const bExit = fine[exitIdx].close;
+            if (bEntry > 0) {
+              const bReturn = ((bExit - bEntry) / bEntry) * 100;
+              if (!breakoutReturns[kind]) breakoutReturns[kind] = [];
+              breakoutReturns[kind].push({ time: sessionStart, value: bReturn });
+            }
+          }
+        } else {
+          breakoutMissedCount[kind] = (breakoutMissedCount[kind] || 0) + 1;
+        }
       }
     }
   }
 
-  return { symbolsUsed, baselineReturns, refinedReturns, missedCount, totalSetups };
+  return { symbolsUsed, baselineReturns, refinedReturns, breakoutReturns, missedCount, breakoutMissedCount, totalSetups };
 }
 
 if (require.main === module) {
   const days15m = Number(process.argv[2]) || 60;
-  run({ days15m }).then(({ symbolsUsed, baselineReturns, refinedReturns, missedCount, totalSetups }) => {
+  run({ days15m }).then(({ symbolsUsed, baselineReturns, refinedReturns, breakoutReturns, missedCount, breakoutMissedCount, totalSetups }) => {
     console.log(`\nCrypto entry refinement test (~${days15m}d window, 15m entry) — ${symbolsUsed} pairs\n`);
     const midpoint = Math.floor(Date.now() / 1000) - (days15m / 2) * 86400;
     for (const kind of TEST_KINDS) {
       const total = totalSetups[kind] || 0;
       const missed = missedCount[kind] || 0;
-      const filled = total - missed;
+      const bMissed = breakoutMissedCount[kind] || 0;
       console.log(`--- ${kind} ---`);
-      console.log(`  setups: ${total}, filled: ${filled} (${total ? Math.round((filled / total) * 1000) / 10 : 0}%), missed: ${missed}`);
-      console.log(`  baseline (all):     ${JSON.stringify(summarize(baselineReturns[kind] || []))}`);
-      console.log(`  refined  (all):     ${JSON.stringify(summarize(refinedReturns[kind] || []))}`);
+      console.log(`  setups: ${total}, pullback-filled: ${total - missed}, breakout-filled: ${total - bMissed}`);
+      console.log(`  baseline (all):        ${JSON.stringify(summarize(baselineReturns[kind] || []))}`);
+      console.log(`  refined pullback (all):${JSON.stringify(summarize(refinedReturns[kind] || []))}`);
+      console.log(`  refined breakout (all):${JSON.stringify(summarize(breakoutReturns[kind] || []))}`);
 
       const bHalves = splitHalves(baselineReturns[kind] || [], midpoint);
       const rHalves = splitHalves(refinedReturns[kind] || [], midpoint);
-      console.log(`  baseline 1st half:  ${JSON.stringify(summarize(bHalves.first))}`);
-      console.log(`  baseline 2nd half:  ${JSON.stringify(summarize(bHalves.second))}`);
-      console.log(`  refined  1st half:  ${JSON.stringify(summarize(rHalves.first))}`);
-      console.log(`  refined  2nd half:  ${JSON.stringify(summarize(rHalves.second))}`);
+      const brHalves = splitHalves(breakoutReturns[kind] || [], midpoint);
+      console.log(`  baseline yr1/yr2:      ${JSON.stringify(summarize(bHalves.first))} | ${JSON.stringify(summarize(bHalves.second))}`);
+      console.log(`  pullback yr1/yr2:      ${JSON.stringify(summarize(rHalves.first))} | ${JSON.stringify(summarize(rHalves.second))}`);
+      console.log(`  breakout yr1/yr2:      ${JSON.stringify(summarize(brHalves.first))} | ${JSON.stringify(summarize(brHalves.second))}`);
     }
   }).catch((err) => {
     console.error(err);
