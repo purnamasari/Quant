@@ -75,7 +75,7 @@ async function getMacroEventsForDate(dateYmd) {
   try {
     const rows = await fetchCalendarRows(dateYmd);
     // null means the feed never answered; an FOMC date is still known locally.
-    if (rows === null) return fomcEventsForDate(dateYmd);
+    if (rows === null) return await fomcEventsForDate(dateYmd);
     const mapped = rows
       .filter((r) => r.country === 'United States' && isMajor(r.eventName))
       .map((r) => ({
@@ -86,11 +86,11 @@ async function getMacroEventsForDate(dateYmd) {
         // Populated only once the release is out; blank/&nbsp; before then.
         actual: cleanValue(r.actual),
       }));
-    return withFomcCorrection(mapped, dateYmd);
+    return await withFomcCorrection(mapped, dateYmd);
   } catch (err) {
     console.error('[macro] fetch failed:', err.message);
     // Even with the feed down, a known FOMC date should still be announced.
-    return fomcEventsForDate(dateYmd);
+    return await fomcEventsForDate(dateYmd);
   }
 }
 
@@ -104,12 +104,50 @@ const FOMC = JSON.parse(
 const FOMC_DECISION_ET = '14:00';
 const FOMC_PRESSER_ET = '14:30';
 
-function fomcEventsForDate(dateYmd) {
+// The Fed calendar gives the right DATE; Nasdaq has the consensus and,
+// eventually, the actual rate — but on its own (wrong) date. Fetching that row
+// and merging it in gives the ping a consensus to show and lets the result
+// announcement fire at all. Without this the FOMC entry carried nulls forever,
+// so the H-1 ping went out with no consensus and the outcome could never be
+// announced, since that path requires `actual` to be populated.
+async function fomcFiguresNear(dateYmd) {
+  const day = new Date(`${dateYmd}T00:00:00Z`);
+  for (const offset of [0, 1, -1, 2]) {
+    const probe = new Date(day.getTime() + offset * 86400000).toISOString().slice(0, 10);
+    let rows;
+    try {
+      rows = await fetchCalendarRows(probe);
+    } catch {
+      continue;
+    }
+    if (!rows) continue;
+    const match = rows.find((r) => r.country === 'United States'
+      && /fed interest rate|interest rate decision|rate decision/i.test(r.eventName));
+    if (match) {
+      const actual = cleanValue(match.actual);
+      const consensus = cleanValue(match.consensus);
+      if (actual || consensus) return { actual, consensus, previous: cleanValue(match.previous), source: probe };
+    }
+  }
+  return { actual: null, consensus: null, previous: null, source: null };
+}
+
+async function fomcEventsForDate(dateYmd) {
   const entry = (FOMC.decisions || []).find((d) => d.date === dateYmd);
   if (!entry) return [];
   const sep = entry.sep ? ' + Summary of Economic Projections (dot plot)' : '';
+  const figures = await fomcFiguresNear(dateYmd);
   return [
-    { time: FOMC_DECISION_ET, name: `FOMC Statement / Fed Interest Rate Decision${sep}`, consensus: null, previous: null, actual: null, fromFedCalendar: true },
+    {
+      time: FOMC_DECISION_ET,
+      name: `FOMC Statement / Fed Interest Rate Decision${sep}`,
+      consensus: figures.consensus,
+      previous: figures.previous,
+      actual: figures.actual,
+      fromFedCalendar: true,
+    },
+    // The press conference has no number of its own — it is commentary, so it
+    // gets a ping but can never produce a result announcement.
     { time: FOMC_PRESSER_ET, name: 'FOMC Press Conference', consensus: null, previous: null, actual: null, fromFedCalendar: true },
   ];
 }
@@ -118,9 +156,9 @@ function fomcEventsForDate(dateYmd) {
 // aggregator reports on a date the Fed does not list — those are the wrong-day
 // duplicates. Nasdaq's own rows survive when the dates agree, since they carry
 // consensus and actual figures this static file cannot.
-function withFomcCorrection(events, dateYmd) {
+async function withFomcCorrection(events, dateYmd) {
   const isFomcRow = (name) => /fomc|fed interest rate|rate decision/i.test(name);
-  const fedEvents = fomcEventsForDate(dateYmd);
+  const fedEvents = await fomcEventsForDate(dateYmd);
   const fedListsThisDate = fedEvents.length > 0;
   const knownYear = (FOMC.decisions || []).some((d) => d.date.slice(0, 4) === dateYmd.slice(0, 4));
 

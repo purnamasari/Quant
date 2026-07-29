@@ -673,3 +673,24 @@ means **0.949R should be read as "roughly 0.7-1.1R", not as a precise figure**.
 The claim that survives all three subsets is the comparative one: the setup
 beats random entries by ~0.95R at t=5.39. That is far more robust than any
 particular point estimate, and it is what the strategy actually rests on.
+
+## Note: FOMC result announcements had a gap I introduced
+
+The Fed-calendar override (added because Nasdaq placed the July 2026 decision a
+day late) hardcoded `actual: null, consensus: null` on its synthetic entries.
+Two consequences, both live on 2026-07-29:
+
+- the H-1 ping fired at the right time but showed **no consensus rate**, which
+  is most of what makes that warning useful;
+- the outcome announcement could **never** fire, because that path requires
+  `actual` to be populated.
+
+Fixed by taking the DATE from the Fed calendar and the FIGURES from whichever
+nearby Nasdaq row carries them (±2 days). Nasdaq had consensus 3.75% sitting on
+its own wrong date the whole time.
+
+Worth remembering as a pattern: overriding a bad data source with an
+authoritative one solved the timing problem and silently created a data
+problem, because the authoritative source only carried the field being
+corrected. Checking the fix end to end — not just the field that was wrong —
+would have caught it the same day.
