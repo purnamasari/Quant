@@ -85,7 +85,16 @@ async function run({ days15m = 60, symbols = null, log = console.log } = {}) {
       for (const hit of hits) {
         const i = hit.index;
         if (i + 2 >= daily.length) continue;
-        const sessionStart = daily[i].time; // crypto daily candle already closes at this ts (UTC cutoff)
+        // BUG FIX: OKX daily candle `time` is the OPEN timestamp (verified:
+        // the still-forming candle's time is "now minus up to 24h", and
+        // consecutive candles are exactly 86400s apart). Day i's CLOSE — the
+        // moment the signal is actually confirmed and baselineEntry priced —
+        // happens at daily[i+1].time (the next candle's open = this one's
+        // close), NOT daily[i].time. Using daily[i].time here previously
+        // started the pullback search a full day too early, overlapping
+        // with the signal day itself before it even closed — a look-ahead
+        // bug that invalidated every earlier run of this script.
+        const sessionStart = daily[i + 1].time;
         const sessionEnd = sessionStart + SEARCH_WINDOW_BARS * FIFTEEN_MIN_SECONDS;
 
         const baselineEntry = daily[i].close;
