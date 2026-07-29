@@ -11,25 +11,21 @@
     "job": "node src/job.js",
     "crypto-job": "node src/cryptoJob.js",
     "macro-ping": "node src/macroPing.js",
-
     "backtest:stock": "node src/stock/backtest.js",
     "backtest:crypto": "node src/crypto/backtest.js",
     "correlate": "node src/analysis/correlateSignals.js",
-
     "risk:leverage": "node src/analysis/leverageRisk.js",
     "risk:funding": "node src/analysis/fundingCost.js",
-
     "news:harvest": "node src/analysis/newsBacktest.js harvest",
     "news:analyze": "node src/analysis/newsBacktest.js analyze",
-
     "events:harvest": "node src/analysis/eventStudy.js harvest",
     "events:csv": "node src/analysis/eventStudy.js csv",
     "events:show": "node src/analysis/eventStudy.js show",
     "events:scalp": "node src/analysis/newsScalpBacktest.js",
-
     "experiment:pairs": "node src/analysis/pairsTrading.js",
     "experiment:swing-stop": "node src/analysis/swingStopTest.js",
-    "experiment:rmultiple": "node src/analysis/rMultipleBacktest.js"
+    "experiment:rmultiple": "node src/analysis/rMultipleBacktest.js",
+    "news:hypotheses": "node src/analysis/newsHypothesesRun.js"
   },
   "dependencies": {
     "playwright": "^1.62.0"
