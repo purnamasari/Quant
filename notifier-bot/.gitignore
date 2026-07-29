@@ -16,3 +16,10 @@ data/alert-log.json
 # Committed on purpose: refetching costs ~20 minutes of rate-limited requests
 # and the candles are immutable history, so caching them makes every analysis
 # reproducible and instant. 1.7MB.
+
+# 4H candle cache — NOT committed, unlike data/export/.
+# The daily cache underpins the validated setup and is worth its 1.7MB. The 4H
+# test was rejected (edge flipped sign between halves), so this cache has no
+# ongoing value and would only grow the repo. Regenerate with
+# `node src/analysis/fourHourTest.js` if the 4H question is ever reopened.
+data/export-4h/
