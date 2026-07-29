@@ -1,0 +1,4 @@
+date,symbol,name,key,releaseUtc,actual,consensus,surprisePercentOfConsensus,expectedDirection,basePrice,releaseRangePercent,volumeVsPriorHour,p1,p2,p5,p15,p30,p60,mfePercent,maePercent,mfeAtMinute,capturedByMinute1Percent,directionConflict,simultaneousCount
+2026-07-17,BTC-USDT,"Core Retail Sales",retail sales,2026-07-17T12:30:00.000Z,-0.2,0,,long,63192.2,0.017,0.2,-0.0065,-0.012,-0.0394,-0.1556,-0.1761,-0.4445,0.0291,-0.6633,4,1,1,1
+2026-07-17,BTC-USDT,"Initial Jobless Claims",initial jobless claims,2026-07-17T12:30:00.000Z,208,216,-3.7,short,63192.2,0.017,0.2,0.0065,0.012,0.0394,0.1556,0.1761,0.4445,0.6633,-0.0291,42,1,1,1
+2026-07-24,BTC-USDT,"Initial Jobless Claims",initial jobless claims,2026-07-24T12:30:00.000Z,187,211,-11.4,short,65028.6,0.038,0.3,-0.0328,-0.0483,0.0146,0.1196,0.3826,1.0963,1.1354,-0.0181,60,-3,0,0
