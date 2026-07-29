@@ -15,19 +15,23 @@ function atr(candles, length = 14) {
   return ranges.reduce((a, b) => a + b, 0) / ranges.length;
 }
 
-function riskPlanFor(candles, { atrStopMultiplier = 1.5, minimumRewardRisk = 1.8 } = {}) {
+// entryOverride: use a different entry price than the latest close (e.g.
+// a 15m pullback-bounce price from cryptoEntryTrigger.js) while still
+// basing the ATR/stop/target distance on the daily candles' volatility.
+function riskPlanFor(candles, { atrStopMultiplier = 1.5, minimumRewardRisk = 1.8, entryOverride = null } = {}) {
   const latest = candles[candles.length - 1];
+  const entry = entryOverride ?? latest.close;
   const a = atr(candles, 14) ?? latest.close * 0.02;
-  const stop = latest.close - a * atrStopMultiplier;
-  const target = latest.close + a * atrStopMultiplier * minimumRewardRisk;
-  const riskPerUnit = latest.close - stop;
-  const rewardPerUnit = target - latest.close;
+  const stop = entry - a * atrStopMultiplier;
+  const target = entry + a * atrStopMultiplier * minimumRewardRisk;
+  const riskPerUnit = entry - stop;
+  const rewardPerUnit = target - entry;
   return {
-    entry: round(latest.close),
+    entry: round(entry),
     stop: round(stop),
     target: round(target),
     rewardRisk: riskPerUnit > 0 ? round(rewardPerUnit / riskPerUnit) : null,
-    stopDistancePercent: round((riskPerUnit / latest.close) * 100),
+    stopDistancePercent: round((riskPerUnit / entry) * 100),
   };
 }
 
