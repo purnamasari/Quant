@@ -34,9 +34,15 @@ import pandas as pd
 from arch import arch_model
 
 EXPORT_DIR = Path(__file__).resolve().parent.parent / "data" / "export"
-MIN_TRAIN = 250          # days before the first forecast
+# Shortened from 250 to 120. GARCH(1,1) has three parameters and converges
+# acceptably on ~120 observations; the earlier 250 discarded every signal in the
+# first year and halved the sample to n=54, which left the storm bucket at n=7 —
+# too thin to base a live filter on. The cost of the shorter window is noisier
+# early parameter estimates, which is the right trade when the alternative is
+# having no usable sample at all.
+MIN_TRAIN = 120
 REFIT_EVERY = 25         # re-estimate params this often; roll the recursion between
-REGIME_LOOKBACK = 180    # window for the volatility percentile
+REGIME_LOOKBACK = 120    # window for the volatility percentile (was 180)
 HOLD_DAYS = 14
 COST_PERCENT = 0.25      # round trip, the crypto convention used throughout
 

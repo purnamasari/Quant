@@ -623,3 +623,53 @@ never hear about is otherwise indistinguishable from no signal.
 **Limitation:** these read `data/alert-log.json`, which records what was
 *alerted*, not what was *traded*. Outcomes are inferred, not filled. See
 ROADMAP item 5.
+
+## GARCH volatility regime filter — tested, REJECTED (and it nearly wasn't)
+
+From milesdeutscher/garchmethod, the first of six public repositories to pass
+code inspection — its walk-forward is genuinely walk-forward. Re-implemented in
+`analysis-py/garch_regime.py` against our own candles and signal dates. GARCH
+forecasts magnitude, never direction, so the testable question was whether
+volatility regime filters the validated setup.
+
+**The first run said yes. It was wrong, and the reason is worth recording.**
+
+At a 250-day burn-in the sample halved to n=54 and the storm bucket held just
+7 trades:
+
+| regime | n=54 run | n=84 run |
+|---|---|---|
+| calm | 1.576R (n=39) | 0.868R (n=58) |
+| normal | 0.112R (n=8) | 0.329R (n=14) |
+| **storm** | **-0.461R (n=7)** | **+0.195R (n=12)**, 66.7% win |
+
+Shortening the burn-in to 120 days — GARCH(1,1) has three parameters and
+converges acceptably on ~120 observations — grew the storm bucket from 7 to 12
+trades and **flipped its sign**. Acting on the first run would have filtered out
+profitable trades.
+
+Midcaps still show a negative storm bucket (-0.604R, n=8, t=-2.69), but two
+universes disagreeing is not a robust finding; it is the same pattern that
+rejected pairs trading and Dual Thrust. The secondary claim also collapsed: the
+GARCH-sized stop went from apparently better to worse than ATR on midcaps
+(0.133R vs 0.251R baseline).
+
+**Not implemented.** Nothing in `src/` references GARCH.
+
+### The more useful finding: our headline number has real uncertainty
+
+Same strategy, same exit rule, different subsets of the same trades:
+
+| subset | baseline avgR |
+|---|---|
+| n=118 (JS, `trailingExitTest.js`) | 0.949R |
+| n=54 (GARCH burn-in 250) | 1.095R |
+| n=84 (GARCH burn-in 120) | 0.682R |
+
+A swing of 0.68 to 1.10. With sd ~1.5-2 and n~100 the standard error is
+~0.15-0.20, so this is within ~1.5 SE and statistically unremarkable — but it
+means **0.949R should be read as "roughly 0.7-1.1R", not as a precise figure**.
+
+The claim that survives all three subsets is the comparative one: the setup
+beats random entries by ~0.95R at t=5.39. That is far more robust than any
+particular point estimate, and it is what the strategy actually rests on.
