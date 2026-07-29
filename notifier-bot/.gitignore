@@ -6,3 +6,8 @@ data/.macro-ping-state.json
 data/.telegram-update-offset.json
 data/.crypto-alert-dedup.json
 data/alert-log.json
+
+# NOTE: data/news-cache/ is deliberately NOT ignored. It is derived data, but
+# Google News re-ranks and drops items over time, so re-fetching later yields
+# a different corpus — committing the cache is what keeps the news backtest
+# numbers reproducible, and it saves ~10 minutes of rate-limited requests.
