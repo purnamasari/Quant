@@ -93,10 +93,21 @@ Every alert shows a conviction tier (⭐⭐⭐ VERY HIGH / ⭐⭐ HIGH / ⭐ MED
 numbers in the improvement pass — cost-adjusted expectancy, stability
 across the two 5-year halves, and sample size — not recomputed live on
 every run (that would mean re-running the full backtest daily, which takes
-tens of seconds to minutes). Nothing currently qualifies as VERY HIGH,
-which is intentional: none of the signals cleared that bar honestly. If
-you re-run the backtest scripts and the picture changes, update this file
-by hand.
+tens of seconds to minutes). If you re-run the backtest scripts and the
+picture changes, update this file by hand.
+
+One kind now qualifies as VERY HIGH: crypto's `cup-forming-confluence` (not
+a real detector kind — a special case of `cup-forming` firing alongside
+2+ other validated crypto kinds the same day). R-multiple-backtested at
+0.497 avgR / 67.8% WR (n=118, 7-day hold) — see "R-multiple search" in
+`data/crypto-signal-validation.md` — clearly ahead of everything else
+tested (next best is less than half as good). It's rare (~1 per 6-10 days)
+and gets its own distinct Telegram banner (⭐⭐⭐ RARE HIGH-CONVICTION
+SETUP, extended "hold up to 7 days" instruction) in `cryptoJob.js` instead
+of blending into the normal cup-forming alert. Deliberately scoped to only
+the original 12-pair crypto universe — expanding to 18 more mid-cap pairs
+was tested and the edge weakened sharply there, so this tier won't fire
+for a customized/wider `CRYPTO_WATCHLIST`.
 
 ## Crypto: hourly during waking hours, not just once a day
 

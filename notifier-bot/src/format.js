@@ -49,14 +49,19 @@ function formatStockAlert({ symbol, name, signal, plan, earningsWarning, news, c
   return lines.filter((l) => l !== null).join('\n');
 }
 
-function formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional }) {
+function formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional, rareTier }) {
   const lines = [
-    `${toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> (crypto) — ${escapeHtml(signal.label)} [${directionLabel(signal.direction)}]`,
+    rareTier
+      ? `⭐⭐⭐ <b>RARE HIGH-CONVICTION SETUP</b> — ${escapeHtml(symbol)} (crypto) — ${escapeHtml(signal.label)} + confluence [${directionLabel(signal.direction)}]`
+      : `${toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> (crypto) — ${escapeHtml(signal.label)} [${directionLabel(signal.direction)}]`,
     provisional
       ? '🟡 <b>PROVISIONAL</b> — candle harian hari ini belum closing (cutoff 00:00 UTC), sinyal ini masih bisa berubah/hilang sebelum final.'
       : '🟢 <b>CONFIRMED</b> — dari candle harian yang sudah closing.',
     escapeHtml(signal.detail),
     convictionLine(conviction),
+    rareTier
+      ? '⏳ <b>Sabar, tahan sampai 7 hari</b> kalau belum kena stop/target — backtest edge ini diukur di hold 7 hari (67.8% WR, avg 0.497R, n=118), bukan hold 2 hari biasa. Ini kejadian langka (~1x per 6-10 hari), bukan alert harian.'
+      : null,
     '',
     `Entry ${plan.entry} | Stop ${plan.stop} | Target ${plan.target} | R:R ${plan.rewardRisk ?? '-'}`,
     `Stop distance: ${plan.stopDistancePercent}%`,

@@ -129,6 +129,64 @@ gained an `entryOverride` param and `src/cryptoEntryTrigger.js` exists as
 reusable infra if this gets revisited later — neither is wired into
 `cryptoJob.js`.
 
+## R-multiple search for a 0.5-1R strategy (holding period, tighter target, confluence)
+
+Motivation: `riskPlanFor`'s live ATR*1.5 stop / 1.8R target only measured
+0.05-0.12R average expectancy at the default 2-day hold across all
+validated kinds — thin. Ran a systematic search (`src/analysis/
+rMultipleBacktest.js`) across extended holds (5/10 days), a tighter 1:1 R:R
+target, and same-day confluence (2+ validated kinds firing together),
+across all 15 long-side signal kinds, 12-pair universe, 2 years.
+
+**Result: `cup-forming` + confluence (>=2 validated kinds same day) + 7-day
+hold is uniquely good** — 0.497 avgR, 67.8% WR, n=118. Next best
+(`ma-alignment`, same conditions) is 0.226R — less than half as good.
+Everything else in the 15-kind sweep is 0.06-0.22R or negative
+(momentum/cup-handle/golden-cross/mean-reversion all negative under these
+conditions). Tighter 1:1 targets and per-symbol optimization were also
+tried and rejected — see git history for the full experiment log.
+
+Real-world frequency: n=118 over 2 years / 12 pairs ≈ 1 signal per ~6 days
+system-wide, or roughly 1 per 6-10 days on a typical 7-pair watchlist. This
+is a rare, special-occasion alert, not a daily one — implemented as a
+distinct "rare high-conviction" tier in `cryptoJob.js` (separate banner,
+`⭐⭐⭐ VERY HIGH` conviction, explicit "hold up to 7 days" instruction,
+own dedup key `cup-forming-confluence`) rather than folded into the normal
+cup-forming alert.
+
+### Does expanding the coin watchlist reproduce more of this edge? Tested — no.
+
+Asked whether it's better to grow the coin watchlist (more symbols = more
+chances for the same validated pattern) or add more strategies (more kinds
+= more triggers), given the rare-alert concern above. Already established
+more strategies doesn't work (15-kind sweep above). Tested the watchlist
+side directly: added 18 established mid-cap pairs never used in any prior
+backtest (DOT, TRX, SUI, NEAR, APT, ICP, ETC, FIL, ATOM, UNI, AAVE, ARB, OP,
+INJ, RENDER, ONDO, HBAR, ALGO) and ran the exact same cup-forming +
+confluence>=2 + 7-day-hold methodology on them in isolation:
+
+| universe | trades | win rate | avg R |
+|---|---|---|---|
+| original 12 (large-cap) | 118 | 67.8% | **0.497** |
+| new 18 (mid-cap) | 79 | 43.0% | **0.095** |
+
+**The edge does not transfer to mid-caps** — win rate roughly halves and
+avgR drops ~80%. Per-symbol breakdown (no confluence filter) shows high
+variance rather than uniform mediocrity (DOT 0.645R n=19, RENDER 0.828R
+n=11, NEAR 0.356R n=21 look good; APT -0.418R, ATOM -0.508R, UNI -0.465R,
+AAVE -0.478R, INJ -0.802R look bad) — but sample sizes per symbol are too
+small (n=7-37) to trust cherry-picking individual winners without risking
+the same overfitting problem already flagged earlier in this doc.
+
+**Conclusion: do not blindly expand `crypto/universe.js`'s
+`DEFAULT_VALIDATION_UNIVERSE`.** The rare high-conviction tier stays scoped
+to the original 12 pairs (enforced in code via an explicit
+`DEFAULT_VALIDATION_UNIVERSE.includes(symbol)` guard in `cryptoJob.js`, so
+it won't silently activate even if `CRYPTO_WATCHLIST` is customized to a
+wider set). If more alert volume is wanted later, the safer path is
+validating specific additional large-cap-quality symbols individually with
+a longer history, not batch-adding mid-caps for volume's sake.
+
 ## Known gaps (not done tonight, be aware before trusting this fully)
 
 - No Jaccard/correlation redundancy check for crypto signals (only done for
