@@ -13,9 +13,26 @@ const TABLE = JSON.parse(
   fs.readFileSync(path.join(__dirname, '..', 'data', 'macro-event-impact.json'), 'utf8'),
 );
 
+// Longest match wins, not first-in-array. Ordering used to decide this, which
+// silently made specific entries unreachable: "Atlanta Fed GDPNow" is listed
+// explicitly under growth data, but the Fed-policy entry appeared earlier and
+// its loose "Fed " token swallowed it — so a nowcast was being explained as a
+// rate decision. Scoring by match length makes the specific entry win wherever
+// it sits in the file.
 function findImpact(eventName) {
   const lower = eventName.toLowerCase();
-  return TABLE.find((entry) => entry.matches.some((m) => lower.includes(m.toLowerCase()))) || null;
+  let best = null;
+  let bestLen = 0;
+  for (const entry of TABLE) {
+    for (const m of entry.matches) {
+      const token = m.toLowerCase();
+      if (lower.includes(token) && token.length > bestLen) {
+        best = entry;
+        bestLen = token.length;
+      }
+    }
+  }
+  return best;
 }
 
 function formatImpactBlock(eventName) {

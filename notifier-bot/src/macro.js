@@ -6,9 +6,15 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+// Deliberately does NOT include a bare 'Fed ' token. That matched every
+// regional Fed survey — Dallas Fed Services Revenues, Richmond, Philly — which
+// are not broad market movers, and worse, they then inherited the FOMC impact
+// text and were announced as if they were rate decisions. Policy events are
+// matched by their actual names instead.
 const MAJOR_KEYWORDS = [
-  'CPI', 'PCE', 'Nonfarm', 'Non-Farm', 'Payroll', 'FOMC', 'Fed ', 'Interest Rate',
-  'Rate Decision', 'GDP', 'Unemployment Rate', 'ISM', 'Retail Sales', 'PPI',
+  'CPI', 'PCE', 'Nonfarm', 'Non-Farm', 'Payroll', 'FOMC', 'Fed Interest Rate',
+  'Interest Rate Decision', 'Rate Decision', 'Federal Funds',
+  'GDP', 'Unemployment Rate', 'ISM', 'Retail Sales', 'PPI',
   'Jobless Claims', 'Consumer Confidence', 'PMI',
 ];
 
