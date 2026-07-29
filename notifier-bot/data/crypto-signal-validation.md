@@ -454,3 +454,76 @@ as stated. It has to be a mechanical rule first (e.g. "the first 1m bar whose
 range is below the trailing 20-bar median and which closes with the expected
 direction"), or it is unfalsifiable — a filter that only looks clean in
 hindsight can never be wrong, and can never be validated either.
+
+## Pre-registered macro-release hypothesis suite — nothing survives
+
+Seven hypotheses, two asset classes, fixed in the module header before any
+result was seen, with a Bonferroni threshold of |t| > 2.9 for fourteen tests.
+`src/analysis/newsHypotheses.js` + `newsHypothesesRun.js`, ~21 months.
+
+**The controls did most of the work.** 165 raw releases reduced to **64
+independent observations**: 49 dropped for opposite-direction simultaneity
+(the same price move would otherwise be scored once as a win and once as a
+loss) and 52 collapsed as same-direction duplicates. Without this, 101 of 165
+"observations" would have been double-counted or self-cancelling — any naive
+run of this analysis is contaminated before it starts.
+
+| hypothesis | best result | verdict |
+|---|---|---|
+| H1 directional drift | BTC +15m, t=2.74 | fails correction — see below |
+| H2 clean-candle entry | BTC -0.084% vs naive +0.006% | **rejected** |
+| H3/H4 momentum vs fade | BTC t=0.98 | no effect |
+| H5 volatility expansion | BTC 0.77x baseline, ETH 1.22x | not confirmed |
+| H6 surprise magnitude | large surprises t=-0.66 | no effect |
+| H7 stocks vs crypto | 61.4% same sign (t≈1.7) | not established |
+
+### H2 — the "clean candle" idea, rejected
+
+Made mechanical as: first post-release 1m bar whose range is below its
+trailing 20-bar median AND whose close agrees with the surprise. It **made
+results worse** — BTC -0.084% against a naive +1m entry's +0.006%, ETH
+-0.095% against -0.050%.
+
+It also turned out not to be a filter at all: it triggered on **63/63 and
+64/64 events**, median entry +9m. A quiet bar agreeing with direction always
+appears within half an hour, so the rule selects nothing and merely delays
+entry by nine minutes. That is worth knowing independently of the sign — a
+criterion that never excludes anything cannot add information.
+
+### H1 — the one candidate, and why it still fails
+
+BTC +15m drifts 0.165% in the surprise-implied direction, t=2.74; ETH agrees
+at 0.174%, t=2.35. Both vanish by +60m (t=0.41 and -0.01), so whatever happens
+reverts within the hour. Three independent reasons not to trade it:
+
+1. **Fails the pre-registered threshold** (2.74 < 2.9). BTC and ETH are not
+   two confirmations — they correlate ~0.8, so this is closer to one test.
+2. **Decays across the sample.** BTC first half t=2.56, second half t=1.11.
+   The same one-regime signature that rejected earlier candidates.
+3. **It is one event type, not "macro releases".** Initial jobless claims is
+   43 of 64 observations and carries all of it (BTC t=3.17); PPI (n=8) and
+   retail sales (n=6) are *negative*. A weekly release is over-represented by
+   construction, and it shares its 08:30 ET slot with other data, so even that
+   attribution is not clean.
+
+### H5 — the assumption that was wrong
+
+Macro releases were expected to expand crypto volatility, which would justify
+a "do not hold leveraged positions through releases" rule regardless of
+direction. BTC's post-release absolute move is **0.77x** its non-event
+baseline — lower, not higher. ETH is 1.22x. Mixed and unconvincing. (Caveat:
+the baseline is 40 windows from a single recent stretch, a weak control; this
+undercuts the rule rather than disproving it.)
+
+### Conclusion
+
+No tradeable edge was found in reacting to macro releases, on either asset
+class, at any horizon tested. The practical consequence is that the H-1 ping
+and the outcome announcement remain **informational** — context for a position
+already held under the validated cup-forming setup, not a trade trigger of
+their own. Nothing here changes `alertCryptoKinds`.
+
+If this is revisited: the honest next test is initial jobless claims alone,
+out-of-sample on the period this run did not cover, with the 08:30 ET
+co-release confound resolved — not a re-run of the full suite hunting for a
+different cell.
