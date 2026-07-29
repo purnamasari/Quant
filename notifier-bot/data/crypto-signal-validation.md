@@ -258,6 +258,79 @@ exposed it. That test should now be standard before enabling anything.
 **Not implemented.** `src/analysis/pairsTrading.js` is kept as the record and
 as reusable infrastructure; nothing references it from the live alert path.
 
+## Swing stop vs ATR stop — tested from the parent Quant project, NOT adopted
+
+The desktop Quant app (`src/shared/quant.ts`) defaults to
+`stopMethod: 'swing'` rather than the flat ATR\*1.5 this bot uses:
+`stop = min(nearestSupport, entry - ATR*0.7)` — a structural stop parked under
+the nearest confirmed pivot low, with an ATR\*0.7 floor. Worth testing because
+stop width also sets max leverage (`positionSizing.js`), so a tighter stop is
+a double win if expectancy holds. `src/analysis/swingStopTest.js`.
+
+Look-ahead hazard handled explicitly: a pivot at bar p is only detectable once
+k more bars print, so only pivots satisfying `p + k <= signalIndex` are used.
+
+| method | n | win rate | avgR | avg stop % | max leverage |
+|---|---|---|---|---|---|
+| ATR\*1.5 (current) | 111 | 63.1% | 0.380 | 7.17% | 6.6x |
+| swing, pivot k=3 | 111 | 60.4% | **0.402** | **5.86%** | **8.1x** |
+| swing, pivot k=5 | 111 | 64.0% | 0.318 | 9.20% | 5.2x |
+| swing, pivot k=8 | 111 | 64.0% | 0.299 | 11.64% | 4.1x |
+
+k=3 is better on both axes — slightly higher avgR *and* a tighter stop
+allowing 8.1x instead of 6.6x. But k=5 and k=8 are both worse than ATR, so the
+advantage exists at exactly one pivot-window value and the avgR gap (0.402 vs
+0.380 on n=111) is well inside noise. **That is the same isolated-cell pattern
+used to reject pairs trading, so the same standard applies: not adopted.**
+Worth revisiting if a larger sample ever makes k=3 look like a plateau rather
+than a point.
+
+## Watchlist change — measured before applying
+
+The scan list was changed to BTC/ETH/SOL/XRP/ZEC/HYPE/DOGE/BNB/ADA/NEAR/AAVE/
+ONDO, dropping AVAX, LINK and LTC. Re-running the rare-tier setup on the new
+list before trusting it:
+
+| universe | n | win rate | avgR |
+|---|---|---|---|
+| original 12 | 118 | 67.8% | **0.497** |
+| new watchlist | 111 | 63.1% | **0.380** |
+
+Still clearly positive, but ~24% weaker, because the three dropped pairs were
+real contributors (LINK 0.481R, LTC 0.211R standalone) while the three added
+ones have no validation behind them.
+
+Per-symbol on the new list (ATR stop, confluence filter):
+
+| pair | n | win rate | avgR |
+|---|---|---|---|
+| BNB | 27 | 77.8% | 0.803 |
+| ETH | 17 | 82.4% | 0.756 |
+| SOL | 18 | 72.2% | 0.514 |
+| BTC | 37 | 45.9% | **-0.060** |
+| NEAR | 2 | 50% | -0.114 |
+| XRP | 3 | 33.3% | -0.210 |
+| AAVE | 2 | 0% | -1.000 |
+| ONDO | 2 | 0% | -1.000 |
+| ZEC, HYPE | 0 | - | - |
+
+Two things worth internalising:
+
+1. **BTC is the weakest large-sample pair here (-0.06R on n=37)** — the
+   aggregate edge is carried by ETH/SOL/BNB. That matters given BTC is the
+   pair that tolerates the highest leverage: the temptation is to size up
+   exactly where the signal has the least evidence behind it.
+2. **ZEC and HYPE produced zero qualifying signals in 2 years** — they are
+   recent listings with short history. They are scanned, but contribute
+   nothing to this setup yet.
+
+Consequently `crypto/universe.js` now separates two things that were
+previously conflated: `DEFAULT_SCAN_UNIVERSE` (what gets scanned) and
+`RARE_TIER_UNIVERSE` (what may carry the VERY HIGH badge). NEAR, AAVE and
+ONDO are scanned and can produce normal alerts, but cannot trigger the rare
+tier until they have evidence. `DEFAULT_VALIDATION_UNIVERSE` is retained so
+every number published in this document stays reproducible.
+
 ## Known gaps (not done tonight, be aware before trusting this fully)
 
 - No Jaccard/correlation redundancy check for crypto signals (only done for

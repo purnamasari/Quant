@@ -85,7 +85,7 @@ function formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional
     escapeHtml(signal.detail),
     convictionLine(conviction),
     rareTier
-      ? '⏳ <b>Sabar, tahan sampai 7 hari</b> kalau belum kena stop/target — backtest edge ini diukur di hold 7 hari (67.8% WR, avg 0.497R, n=118), bukan hold 2 hari biasa. Ini kejadian langka (~1x per 6-10 hari), bukan alert harian.'
+      ? '⏳ <b>Sabar, tahan sampai 7 hari</b> kalau belum kena stop/target — backtest edge ini diukur di hold 7 hari (0.38-0.50R, WR 63-68%), bukan hold 2 hari biasa. Ini kejadian langka (~1x per 6-10 hari), bukan alert harian.'
       : null,
     '',
     `Entry ${plan.entry} | Stop ${plan.stop} | Target ${plan.target} | R:R ${plan.rewardRisk ?? '-'}`,

@@ -64,7 +64,7 @@ async function scanCrypto() {
       if (!matched.length) continue;
 
       const confluenceCount = signals.filter((s) => CONFLUENCE_PARTNER_KINDS.includes(s.kind)).length;
-      const rareTierEligible = cryptoUniverse.DEFAULT_VALIDATION_UNIVERSE.includes(symbol) && confluenceCount >= 2;
+      const rareTierEligible = cryptoUniverse.RARE_TIER_UNIVERSE.includes(symbol) && confluenceCount >= 2;
 
       const plan = riskPlanFor(candles);
       const coinName = symbol.split('-')[0];
