@@ -34,6 +34,7 @@ const { nowStampWithWib } = require('./time');
 const { ChartRenderer } = require('./chart');
 const { shouldSend } = require('./cryptoDedup');
 const { deliverAlerts } = require('./deliverAlert');
+const { positionPlan } = require('./positionSizing');
 
 // "Rare high-conviction" tier: cup-forming + same-day confluence with >=1
 // other validated kind, R-multiple-backtested at 0.497 avgR / 67.8% WR
@@ -75,6 +76,11 @@ async function scanCrypto() {
         if (!shouldSend(symbol, dedupKind, status)) continue;
 
         const conviction = convictionFor('crypto', rareTier ? 'cup-forming-confluence' : signal.kind);
+        const position = positionPlan({
+          stopDistancePercent: plan.stopDistancePercent,
+          entry: plan.entry,
+          fundingRate: funding?.fundingRate,
+        });
         alerts.push({
           market: 'crypto',
           symbol,
@@ -85,7 +91,7 @@ async function scanCrypto() {
           plan,
           signal,
           chartTitle: `${symbol} — ${signal.label}${rareTier ? ' + confluence (RARE)' : ''} [${signal.direction === 'short' ? 'SHORT' : 'LONG'}]${provisional ? ' (provisional)' : ''}`,
-          text: formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional, rareTier }),
+          text: formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional, rareTier, position }),
         });
       }
     } catch (err) {

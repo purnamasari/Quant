@@ -34,6 +34,31 @@ function convictionLine(conviction) {
   return `${conviction.emoji} Conviction: <b>${conviction.label}</b> — <i>${escapeHtml(conviction.reason)}</i>`;
 }
 
+// Leverage/sizing block. Deliberately leads with max leverage rather than a
+// suggested position size: the number people get wrong is the leverage, and
+// it is derived from this specific setup's stop width, not chosen by feel.
+function positionLines(position) {
+  if (!position) return [];
+  const lines = ['', '⚙️ <b>Position plan</b>'];
+  lines.push(
+    `Max aman ${position.maxSafeLeverage}x → pakai <b>${position.suggestedLeverage}x</b> ` +
+    `(likuidasi ~${position.liquidationMovePercent}% = ${position.liquidationVsStop}x jarak stop)`,
+  );
+  if (position.margin != null) {
+    lines.push(
+      `Risk ${position.riskAmount} | Notional ${position.notional} | Margin ${position.margin} ` +
+      `(${position.marginPercentOfAccount}% akun)`,
+    );
+  } else {
+    lines.push(`Notional = ${position.notionalPerUnitRisk}x jumlah yang kamu risk-kan (set ACCOUNT_SIZE di .env buat angka konkret)`);
+  }
+  if (position.fundingHoldCostR != null) {
+    lines.push(`Funding 7 hari ≈ ${position.fundingHoldCostPercent}% = ${position.fundingHoldCostR}R`);
+  }
+  for (const w of position.warnings || []) lines.push(`⚠️ ${escapeHtml(w)}`);
+  return lines;
+}
+
 function formatStockAlert({ symbol, name, signal, plan, earningsWarning, news, conviction }) {
   const lines = [
     `${toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> — ${escapeHtml(signal.label)} [${directionLabel(signal.direction)}]`,
@@ -49,7 +74,7 @@ function formatStockAlert({ symbol, name, signal, plan, earningsWarning, news, c
   return lines.filter((l) => l !== null).join('\n');
 }
 
-function formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional, rareTier }) {
+function formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional, rareTier, position }) {
   const lines = [
     rareTier
       ? `⭐⭐⭐ <b>RARE HIGH-CONVICTION SETUP</b> — ${escapeHtml(symbol)} (crypto) — ${escapeHtml(signal.label)} + confluence [${directionLabel(signal.direction)}]`
@@ -65,6 +90,7 @@ function formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional
     '',
     `Entry ${plan.entry} | Stop ${plan.stop} | Target ${plan.target} | R:R ${plan.rewardRisk ?? '-'}`,
     `Stop distance: ${plan.stopDistancePercent}%`,
+    ...positionLines(position),
     ...newsLines(news),
     '',
     "<i>Price data via OKX (Binance unreachable from this job's network) — verify against your actual venue before entering.</i>",

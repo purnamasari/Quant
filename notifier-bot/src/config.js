@@ -70,4 +70,16 @@ module.exports = {
     ? csv(process.env.ALERT_CRYPTO_KINDS)
     : ['ma-alignment', 'near-52w-high', 'volume-surge', 'cup-forming', 'bos-bullish'],
   earningsGuardDays: Number(process.env.EARNINGS_GUARD_DAYS || 3),
+  // Leveraged position sizing (see src/positionSizing.js). ACCOUNT_SIZE is
+  // optional — without it alerts still show max safe leverage and the
+  // notional-per-unit-of-risk ratio, just not concrete amounts. RISK_PERCENT
+  // is the share of the account risked if the stop is hit; 1% is the
+  // conventional ceiling and already aggressive when several correlated
+  // crypto longs can be open at once.
+  accountSize: Number(process.env.ACCOUNT_SIZE || 0),
+  riskPercent: Number(process.env.RISK_PERCENT || 1),
+  // Crypto longs are all substantially the same bet on BTC direction
+  // (correlation typically 0.7-0.9), so N open positions is closer to N x
+  // risk than to a diversified book. Caps total simultaneous exposure.
+  maxConcurrentPositions: Number(process.env.MAX_CONCURRENT_POSITIONS || 3),
 };

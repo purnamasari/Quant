@@ -220,9 +220,51 @@ you that — it would need an actual always-on server with a webhook.
   repeat the same PROVISIONAL/CONFIRMED alert.
 - `src/deliverAlert.js` — shared chart+message+tracking delivery, used by
   both `job.js` and `cryptoJob.js`.
+- `src/positionSizing.js` — turns each alert's stop width into a max safe
+  leverage, notional, and margin (see "Leverage" below).
+- `src/analysis/leverageRisk.js` — replays every historical setup at 1x-100x
+  to measure where leverage starts destroying the edge.
+- `src/analysis/fundingCost.js` — real OKX funding history expressed in R
+  units, i.e. what a 7-day leveraged hold actually costs.
 - `data/stock-signal-validation.md`, `data/crypto-signal-validation.md` —
   the actual backtest + correlation numbers behind the default alert
   filters in `src/config.js`. Read these before trusting the defaults.
+- `data/risk-management-plan.md` — the full leveraged-trading system design:
+  sizing, leverage caps, funding, correlation, circuit breakers.
+
+## Leverage — derived per trade, not chosen
+
+Every crypto alert carries a position plan. The rule is that **leverage is an
+output, not an input**: you pick how much of the account to risk, the setup's
+ATR-based stop width sets the notional, and leverage is only how much margin
+you post to hold it — sized so liquidation sits at least 2x the stop distance
+away, keeping the stop (not the exchange) in control of the exit.
+
+This is not a style preference. Replaying all 118 historical
+cup-forming+confluence trades at each leverage (`src/analysis/leverageRisk.js`,
+avgR in original R units so the rows are comparable):
+
+| leverage | avgR | win rate | liquidated |
+|---|---|---|---|
+| 1-5x | 0.497 | 67.8% | 0% |
+| 10x | 0.495 | 67.8% | 4.2% |
+| 20x | 0.439 | 60.2% | 18.6% |
+| 30x | 0.304 | 47.5% | 50.0% |
+| 100x | 0.096 | 16.9% | 83.1% |
+
+Same setups, same entries — only the exits change. Above ~15x the exchange's
+liquidation price sits inside the ATR\*1.5 stop, so it silently becomes the
+stop, and normal noise starts closing trades that would have won. Because
+stop width varies by pair, so does the resulting cap: BTC ~12x (3.9% stop),
+most altcoins ~4-5x (8-13% stops). Hard-capped at 15x regardless.
+
+Alerts also project the 7-day funding bill in R and warn past 0.15R. Measured
+funding on OKX has been negligible (<0.04R) but that endpoint only retains
+~92 days, which excludes the euphoric phases when funding actually bites — at
+0.1%/8h the bill reaches 0.54R and exceeds the entire edge.
+
+Full reasoning, worked examples, and circuit breakers:
+`data/risk-management-plan.md`.
 
 ## Important limitations — read before relying on this
 
