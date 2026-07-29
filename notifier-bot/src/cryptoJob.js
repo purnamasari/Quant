@@ -35,6 +35,7 @@ const { ChartRenderer } = require('./chart');
 const { shouldSend } = require('./cryptoDedup');
 const { deliverAlerts } = require('./deliverAlert');
 const { positionPlan } = require('./positionSizing');
+const { checkProtections } = require('./protections');
 
 // "Rare high-conviction" tier: cup-forming + same-day confluence with >=1
 // other validated kind, R-multiple-backtested at 0.497 avgR / 67.8% WR
@@ -63,6 +64,17 @@ async function scanCrypto() {
       const { signals } = detectCryptoSignals(candles, funding);
       const matched = signals.filter((s) => (s.kind === 'funding-extreme' ? false : config.alertCryptoKinds.includes(s.kind)));
       if (!matched.length) continue;
+
+      // Circuit breakers run before anything is composed, so a blocked pair
+      // costs no chart render or news fetch. The reason is logged rather than
+      // silently swallowed — a suppressed signal you never hear about is
+      // indistinguishable from no signal, which is the failure mode this
+      // project keeps running into.
+      const guard = checkProtections(symbol);
+      if (guard.blocked) {
+        console.log(`[cryptoJob] ${symbol} suppressed — ${guard.reason}`);
+        continue;
+      }
 
       const confluenceCount = signals.filter((s) => CONFLUENCE_PARTNER_KINDS.includes(s.kind)).length;
       const rareTierEligible = cryptoUniverse.RARE_TIER_UNIVERSE.includes(symbol) && confluenceCount >= 2;

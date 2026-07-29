@@ -527,3 +527,99 @@ If this is revisited: the honest next test is initial jobless claims alone,
 out-of-sample on the period this run did not cover, with the 08:30 ET
 co-release confound resolved — not a re-run of the full suite hunting for a
 different cell.
+
+## Exit rule revised — the fixed target was costing half the edge
+
+Prompted by porting Parabolic SAR from je-suis-tm/quant-trading, to address the
+user's own diagnosis of past losses: "closing too early while the direction was
+right". `src/analysis/trailingExitTest.js`. Identical entries throughout — only
+the exit varies. 118 trades, validated universe, 0.25% cost converted to R per
+trade (cost% / stop%, since stop width varies a lot by pair).
+
+| exit rule | avgR | t | avg days |
+|---|---|---|---|
+| ATR\*1.5 stop + 1.8R target, 7d — **what we had** | 0.453 | 4.68 | 5.5 |
+| ATR\*1.5 stop + 1.8R target, 14d | 0.709 | 6.24 | — |
+| **ATR\*1.5 stop, NO target, 14d** | **0.949** | **5.49** | — |
+| Parabolic SAR trailing, 14d cap | 0.876 | 5.36 | 10.4 |
+| ATR\*1.5 stop, NO target, 21d | 0.823 | 4.50 | — |
+
+Two results run against intuition and both were tested rather than assumed:
+
+1. **The trailing stop is worse than having no target at all.** SAR re-introduces
+   an early exit; removing the target and letting the trade run to a time limit
+   beats it. The idea that prompted the work turned out not to be the answer.
+2. **Most of the gain is from holding longer, not from exit cleverness.** Simply
+   extending 7d → 14d captures 0.453 → 0.709 of the total move. 21d is worse
+   than 14d, so this is a plateau, not "longer is always better".
+
+### The controls that make this trustworthy
+
+The obvious objection is bull-market drift: crypto rose over this window, so
+holding longer improves anything. Two checks:
+
+- **Random entries, same pairs, same 14-day hold, same R normalisation:
+  0.003R (t 0.10, n=2360).** The period gave nothing away for free. Signal
+  minus random is **+0.946R, t=5.39**.
+- **Out-of-universe, 18 mid-caps:** 0.588R (t 2.63) versus 0.071R for random
+  there (difference +0.517R, t 2.27). Note the old fixed-target exit measured
+  only 0.046R on these pairs — the revised exit is what makes the signal work
+  outside the universe it was developed on.
+
+Split-half on the validated universe: 0.687 (t 3.30) then 1.211 (t 4.43) —
+positive and significant in both halves. Outlier check: the top 5 of 118 trades
+carry 32% of total R, but removing them still leaves 0.624R with a median trade
+of 0.529R, so it is not a lottery.
+
+One honest caveat: on the validated 12, buy-and-hold for 14 days with NO stop
+scores 0.954R — indistinguishable from the 0.949R with a stop. **The ATR stop
+adds nothing there.** It does earn its keep out-of-universe (0.588R with stop
+vs 0.485R without), which is where blowups actually happen, so it stays.
+
+**Implemented.** `riskPlanFor` now returns `holdDays: 14`, alerts label the old
+target as a "Ref level" rather than an exit, and the message states the measured
+cost of closing early. This is the largest single improvement found in the
+project so far, and it came from changing the exit, not from finding a signal.
+
+## Dual Thrust — tested, REJECTED on a clean sign flip
+
+Opening-range breakout ported from the same repo (range = max(maxHigh−minClose,
+maxClose−minLow); long when price breaks open + k·range). Tested because it
+anchors on the daily open and crypto has a hard UTC boundary.
+
+It **beats random entries** at every parameter setting (t 2.38-2.64), which is
+exactly how a bad rule passes a lazy review. The split-half kills it:
+
+| params | universe | first half | second half |
+|---|---|---|---|
+| n=4, k=0.5 | mid-caps | 0.446 (t 3.89) | **−0.224 (t −3.57)** |
+| n=4, k=0.7 | validated | 0.822 (t 5.82) | **−0.309 (t −5.07)** |
+| n=10, k=0.5 | validated | 0.933 (t 4.57) | **−0.294 (t −3.96)** |
+| n=10, k=0.5 | mid-caps | 0.418 (t 3.74) | **−0.284 (t −4.76)** |
+
+Every configuration, both universes: strongly positive in the first half,
+strongly *negative* in the second, significant in both directions. That is not
+noise — the effect existed and then reversed. **Not implemented.**
+
+## Circuit breakers — now code, not prose
+
+`data/risk-management-plan.md` described circuit breakers but nothing enforced
+them, so they only applied if remembered in the moment — which is when they are
+least likely to be. Two are now implemented in `src/protections.js`, ported in
+concept from freqtrade:
+
+- **cooldown** — after a pair stops out, suppress its signals for 72h. The urge
+  to re-enter the position that just hurt is strongest when judgement is worst.
+- **stoploss guard** — 3 stop-outs across the book inside 7 days pauses
+  everything for 48h. A cluster of stops usually means the regime changed.
+
+freqtrade's `low_profit_pairs` was deliberately **not** ported: at roughly one
+signal per pair per few weeks, per-pair profit over any usable window is a
+handful of trades, and disabling on that is fitting noise.
+
+Suppressions are logged with their reason rather than swallowed — a signal you
+never hear about is otherwise indistinguishable from no signal.
+
+**Limitation:** these read `data/alert-log.json`, which records what was
+*alerted*, not what was *traded*. Outcomes are inferred, not filled. See
+ROADMAP item 5.

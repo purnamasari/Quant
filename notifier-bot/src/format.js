@@ -85,11 +85,15 @@ function formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional
     escapeHtml(signal.detail),
     convictionLine(conviction),
     rareTier
-      ? '⏳ <b>Sabar, tahan sampai 7 hari</b> kalau belum kena stop/target — backtest edge ini diukur di hold 7 hari (0.38-0.50R, WR 63-68%), bukan hold 2 hari biasa. Ini kejadian langka (~1x per 6-10 hari), bukan alert harian.'
+      ? '⏳ <b>Sabar — ini setup yang butuh waktu.</b> Kejadian langka (~1x per 6-10 hari), bukan alert harian. Yang paling mahal di sini bukan salah arah, tapi tutup kecepetan: di backtest, entry yang sama menghasilkan 0.45R kalau ditutup di 1.8R, dan 0.95R kalau dibiarkan jalan sampai stop atau 14 hari.'
       : null,
     '',
-    `Entry ${plan.entry} | Stop ${plan.stop} | Target ${plan.target} | R:R ${plan.rewardRisk ?? '-'}`,
+    `Entry ${plan.entry} | Stop ${plan.stop} | Ref level ${plan.target}`,
     `Stop distance: ${plan.stopDistancePercent}%`,
+    // The exit rule is stop-or-time, not target. Stated explicitly because the
+    // measured cost of closing at 1.8R was about half the edge (0.453R vs
+    // 0.949R on identical entries) — see src/risk.js for the numbers.
+    `🎯 <b>Exit: stop, atau ${plan.holdDays ?? 14} hari</b> — <i>jangan tutup di "Ref level"; itu cuma patokan, bukan target. Backtest: tutup di 1.8R menghasilkan 0.453R, dibiarkan jalan 0.949R.</i>`,
     ...positionLines(position),
     ...newsLines(news),
     '',

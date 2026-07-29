@@ -4,36 +4,123 @@
     "tiers": "very-high | high | medium | low"
   },
   "stock": {
-    "momentum": { "tier": "medium", "reason": "Stable across both 5y halves (0.18%->0.21%), but only 0.04% after cost — thin margin caps it below high." },
-    "cup-forming": { "tier": "medium", "reason": "Stable (0.20%->0.14%), 0.02% after cost — thin." },
-    "golden-cross": { "tier": "low", "reason": "Stable direction but smallest sample of the three defaults (n=6935) and thinnest cost-adjusted margin (0.01%)." },
-    "macd-bullish": { "tier": "medium", "reason": "Largest sample (102k) and stable, but very redundant with other signals (high Jaccard overlap) and only 0.01% after cost." },
-    "vcp": { "tier": "low", "reason": "Weakened a lot from 3y (0.21%) to 10y (0.07%) and negative after cost." },
-    "cup-handle": { "tier": "low", "reason": "Went negative once cost was applied (-0.06%)." },
-    "mean-reversion": { "tier": "low", "reason": "Sign flips between 5y halves (-0.51% then +0.44%) — not a real edge, regime-dependent." },
-    "volume-surge": { "tier": "low", "reason": "Sign flips between 5y halves (-0.10% then +0.22%)." },
-    "ma-alignment": { "tier": "low", "reason": "Positive but thin (0.12% 10y) and highly redundant with near-52w-high/momentum." },
-    "ob-bullish": { "tier": "high", "reason": "Ported from a TradingView SMC indicator (src/smc.js). Best of all stock signals: stable both 5y halves (0.26%->0.17%), stays POSITIVE after cost in both (0.11%/0.02% — nothing else does), and low redundancy (<0.1 Jaccard) with momentum/cup-forming/golden-cross." },
-    "fvg-bullish": { "tier": "low", "reason": "Positive raw both halves (0.21%->0.09%) but cost-adjusted flips negative in the second half (0.06%->-0.06%) — same instability pattern as mean-reversion/volume-surge." },
-    "bos-bullish": { "tier": "low", "reason": "Same instability as fvg-bullish on stocks: cost-adjusted flips negative second half (0.06%->-0.05%). (Note: bos-bullish is HIGH tier for crypto — see below, doesn't transfer across markets.)" },
-    "ob-bearish": { "tier": "low", "reason": "Negative both halves (-0.31%/-0.33% cost-adjusted), consistent with every other bearish signal in this bot." },
-    "fvg-bearish": { "tier": "low", "reason": "Negative both halves (-0.24%/-0.33% cost-adjusted)." },
-    "bos-bearish": { "tier": "low", "reason": "Negative both halves (-0.33%/-0.24% cost-adjusted)." }
+    "momentum": {
+      "tier": "medium",
+      "reason": "Stable across both 5y halves (0.18%->0.21%), but only 0.04% after cost — thin margin caps it below high."
+    },
+    "cup-forming": {
+      "tier": "medium",
+      "reason": "Stable (0.20%->0.14%), 0.02% after cost — thin."
+    },
+    "golden-cross": {
+      "tier": "low",
+      "reason": "Stable direction but smallest sample of the three defaults (n=6935) and thinnest cost-adjusted margin (0.01%)."
+    },
+    "macd-bullish": {
+      "tier": "medium",
+      "reason": "Largest sample (102k) and stable, but very redundant with other signals (high Jaccard overlap) and only 0.01% after cost."
+    },
+    "vcp": {
+      "tier": "low",
+      "reason": "Weakened a lot from 3y (0.21%) to 10y (0.07%) and negative after cost."
+    },
+    "cup-handle": {
+      "tier": "low",
+      "reason": "Went negative once cost was applied (-0.06%)."
+    },
+    "mean-reversion": {
+      "tier": "low",
+      "reason": "Sign flips between 5y halves (-0.51% then +0.44%) — not a real edge, regime-dependent."
+    },
+    "volume-surge": {
+      "tier": "low",
+      "reason": "Sign flips between 5y halves (-0.10% then +0.22%)."
+    },
+    "ma-alignment": {
+      "tier": "low",
+      "reason": "Positive but thin (0.12% 10y) and highly redundant with near-52w-high/momentum."
+    },
+    "ob-bullish": {
+      "tier": "high",
+      "reason": "Ported from a TradingView SMC indicator (src/smc.js). Best of all stock signals: stable both 5y halves (0.26%->0.17%), stays POSITIVE after cost in both (0.11%/0.02% — nothing else does), and low redundancy (<0.1 Jaccard) with momentum/cup-forming/golden-cross."
+    },
+    "fvg-bullish": {
+      "tier": "low",
+      "reason": "Positive raw both halves (0.21%->0.09%) but cost-adjusted flips negative in the second half (0.06%->-0.06%) — same instability pattern as mean-reversion/volume-surge."
+    },
+    "bos-bullish": {
+      "tier": "low",
+      "reason": "Same instability as fvg-bullish on stocks: cost-adjusted flips negative second half (0.06%->-0.05%). (Note: bos-bullish is HIGH tier for crypto — see below, doesn't transfer across markets.)"
+    },
+    "ob-bearish": {
+      "tier": "low",
+      "reason": "Negative both halves (-0.31%/-0.33% cost-adjusted), consistent with every other bearish signal in this bot."
+    },
+    "fvg-bearish": {
+      "tier": "low",
+      "reason": "Negative both halves (-0.24%/-0.33% cost-adjusted)."
+    },
+    "bos-bearish": {
+      "tier": "low",
+      "reason": "Negative both halves (-0.33%/-0.24% cost-adjusted)."
+    }
   },
   "crypto": {
-    "ma-alignment": { "tier": "high", "reason": "0.88% after 0.25% cost assumption, n=918, not among the highly-correlated pairs." },
-    "volume-surge": { "tier": "high", "reason": "0.91% after cost, n=359." },
-    "near-52w-high": { "tier": "medium", "reason": "0.79% after cost but smaller sample (n=261) than the two 'high' kinds." },
-    "cup-forming": { "tier": "medium", "reason": "0.44% after cost, n=441 — solid but well below the top two." },
-    "cup-forming-confluence": { "tier": "very-high", "reason": "R-multiple backtest (ATR*1.5 stop, 1.8R target, 7-day hold): cup-forming + same-day confluence with >=1 other validated crypto kind. Measured 0.497R at 67.8% WR (n=118) on the original 12-pair universe; 0.380R at 63.1% WR (n=111) on the current watchlist, which swapped out three strong contributors (AVAX/LINK/LTC) for three unvalidated ones. Still the only combo found that clears a meaningful bar after testing 15 signal kinds, tighter targets, extended holds, per-symbol tuning and pairs trading. Rare — roughly 1 signal per 6-10 days. Fires ONLY on pairs in RARE_TIER_UNIVERSE (crypto/universe.js): the edge collapsed to 0.095R on 18 mid-cap pairs, and NEAR/AAVE/ONDO were never in any validated set. Caveat worth knowing: the aggregate is carried by ETH/SOL/BNB (0.51R-0.80R); BTC itself measured -0.06R on n=37 with this filter." },
-    "vcp": { "tier": "low", "reason": "0.32% after cost but very high fire frequency (n=1345), likely redundant/generic." },
-    "mean-reversion": { "tier": "low", "reason": "0.32% after cost but small sample (n=167)." },
-    "bos-bullish": { "tier": "high", "reason": "0.52% after 0.25% cost, n=464, low redundancy (<0.15 Jaccard) with the other 4 crypto defaults. Unlike stocks, this is the SMC kind that works for crypto — ob-bullish (best on stocks) tested -0.64% here." },
-    "ob-bullish": { "tier": "low", "reason": "-0.64% after cost on crypto despite being the best stock signal — asset classes don't transfer, do not enable here." },
-    "fvg-bullish": { "tier": "low", "reason": "-0.28% after cost on crypto." },
-    "ob-bearish": { "tier": "low", "reason": "-0.74% after cost." },
-    "fvg-bearish": { "tier": "low", "reason": "-1.27% after cost, the worst of all SMC variants tested." },
-    "bos-bearish": { "tier": "low", "reason": "-0.45% after cost." }
+    "ma-alignment": {
+      "tier": "high",
+      "reason": "0.88% after 0.25% cost assumption, n=918, not among the highly-correlated pairs."
+    },
+    "volume-surge": {
+      "tier": "high",
+      "reason": "0.91% after cost, n=359."
+    },
+    "near-52w-high": {
+      "tier": "medium",
+      "reason": "0.79% after cost but smaller sample (n=261) than the two 'high' kinds."
+    },
+    "cup-forming": {
+      "tier": "medium",
+      "reason": "0.44% after cost, n=441 — solid but well below the top two."
+    },
+    "cup-forming-confluence": {
+      "tier": "very-high",
+      "reason": "cup-forming + same-day confluence with >=2 validated crypto kinds. Exit rule revised after measurement (src/analysis/trailingExitTest.js): ATR*1.5 stop, NO fixed target, hold to 14 days measures 0.949R (t 5.49, n=118) versus 0.453R for the old 1.8R/7-day exit on identical entries. Validated against the controls that matter — random entries over the same pairs and period return 0.003R (t 0.10, n 2360), so this is not bull-market drift, and it survives out-of-universe on 18 mid-caps (0.588R, t 2.63) where the old fixed-target exit measured only 0.046R. A Parabolic SAR trailing stop was tested and is WORSE (0.876R) than simply removing the target. Rare: roughly 1 signal per 6-10 days. Fires ONLY on RARE_TIER_UNIVERSE pairs."
+    },
+    "vcp": {
+      "tier": "low",
+      "reason": "0.32% after cost but very high fire frequency (n=1345), likely redundant/generic."
+    },
+    "mean-reversion": {
+      "tier": "low",
+      "reason": "0.32% after cost but small sample (n=167)."
+    },
+    "bos-bullish": {
+      "tier": "high",
+      "reason": "0.52% after 0.25% cost, n=464, low redundancy (<0.15 Jaccard) with the other 4 crypto defaults. Unlike stocks, this is the SMC kind that works for crypto — ob-bullish (best on stocks) tested -0.64% here."
+    },
+    "ob-bullish": {
+      "tier": "low",
+      "reason": "-0.64% after cost on crypto despite being the best stock signal — asset classes don't transfer, do not enable here."
+    },
+    "fvg-bullish": {
+      "tier": "low",
+      "reason": "-0.28% after cost on crypto."
+    },
+    "ob-bearish": {
+      "tier": "low",
+      "reason": "-0.74% after cost."
+    },
+    "fvg-bearish": {
+      "tier": "low",
+      "reason": "-1.27% after cost, the worst of all SMC variants tested."
+    },
+    "bos-bearish": {
+      "tier": "low",
+      "reason": "-0.45% after cost."
+    }
   },
-  "default": { "tier": "low", "reason": "No backtest entry for this kind — treat as unvalidated until it's run through the same pipeline." }
+  "default": {
+    "tier": "low",
+    "reason": "No backtest entry for this kind — treat as unvalidated until it's run through the same pipeline."
+  }
 }
