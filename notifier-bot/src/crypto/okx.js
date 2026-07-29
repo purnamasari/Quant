@@ -20,16 +20,16 @@ function toInstId(symbol) {
   return `${base}-${quote}`;
 }
 
-async function getDailyCandles(symbol, days = 300) {
+async function getCandles(symbol, bar, count, { pauseMs = 0 } = {}) {
   const instId = toInstId(symbol);
   const candles = [];
   let after = undefined;
   const limit = 100;
-  while (candles.length < days) {
+  while (candles.length < count) {
     const url = new URL(`${BASE}/api/v5/market/${after ? 'history-candles' : 'candles'}`);
     url.searchParams.set('instId', instId);
-    url.searchParams.set('bar', '1D');
-    url.searchParams.set('limit', String(Math.min(limit, days - candles.length + limit)));
+    url.searchParams.set('bar', bar);
+    url.searchParams.set('limit', String(Math.min(limit, count - candles.length + limit)));
     if (after) url.searchParams.set('after', after);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`okx candles ${instId}: HTTP ${res.status}`);
@@ -38,7 +38,7 @@ async function getDailyCandles(symbol, days = 300) {
     const rows = json.data || [];
     if (!rows.length) break;
     // OKX returns newest-first: [ts, o, h, l, c, vol, volCcy, volCcyQuote, confirm]
-    // confirm=0 means today's candle is still forming (not closed yet) —
+    // confirm=0 means the latest candle is still forming (not closed yet) —
     // matters when scanning intraday, since our signal thresholds were
     // backtested against closed candles only. See cryptoJob.js.
     for (const row of rows) {
@@ -54,10 +54,15 @@ async function getDailyCandles(symbol, days = 300) {
     }
     after = rows[rows.length - 1][0];
     if (rows.length < limit) break;
+    if (pauseMs) await new Promise((r) => setTimeout(r, pauseMs));
   }
   // sort ascending by time (OKX gives newest-first)
   candles.sort((a, b) => a.time - b.time);
-  return candles.slice(-days);
+  return candles.slice(-count);
+}
+
+async function getDailyCandles(symbol, days = 300) {
+  return getCandles(symbol, '1D', days);
 }
 
 async function getFundingRate(symbol) {
@@ -75,4 +80,4 @@ async function getFundingRate(symbol) {
   };
 }
 
-module.exports = { getDailyCandles, getFundingRate, toInstId };
+module.exports = { getDailyCandles, getCandles, getFundingRate, toInstId };
