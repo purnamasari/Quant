@@ -123,10 +123,13 @@ async function main() {
     if (shouldSend('_system', 'data-outage', 'error')) {
       const reason = failures[0]?.message || 'unknown error';
       await sendMessage(
-        `⚠️ <b>Crypto scan gagal total</b> — ${scanned}/${scanned} pair tidak bisa diambil datanya.\n\n` +
+        `⚠️ <b>Crypto scan gagal total</b> — ${scanned}/${scanned} pair tidak bisa diambil datanya, ` +
+        `padahal tiap request sudah di-retry 3x.\n\n` +
         `Error: <code>${reason}</code>\n\n` +
-        `Ini biasanya rate limit OKX yang sementara dan pulih sendiri. Kalau alert ini muncul lagi besok, ` +
-        `berarti bukan transient — cek koneksi ke OKX dari server.`,
+        `Penyebab tersering bukan OKX-nya, tapi kegagalan DNS/jaringan di sisi server ` +
+        `(503 dengan body "DNS resolution failure" pernah terjadi 2x dalam sehari dan pulih sendiri ` +
+        `dalam beberapa menit). Karena retry pun gagal, ini lebih lama dari biasanya — ` +
+        `cek konektivitas server kalau berlanjut.`,
       ).catch((err) => console.error('[cryptoJob] outage notice failed:', err.message));
     }
     process.exitCode = 1;

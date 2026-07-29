@@ -12,6 +12,40 @@
 
 const BASE = 'https://www.okx.com';
 
+// Transient-failure retry. Observed in practice: whole scans failing 12/12
+// with HTTP 503 whose body reads "DNS resolution failure" — that text comes
+// from the network path in front of us, not from OKX, and direct requests to
+// the same URLs succeed seconds later. Two such episodes occurred in one day,
+// each clearing within a couple of minutes.
+//
+// Without a retry a single blip discards the entire scan, which for an hourly
+// job means a whole hour of blindness. Retrying inside the client fixes it at
+// the right level: one symbol's hiccup no longer costs the run.
+const MAX_ATTEMPTS = 3;
+const RETRY_BASE_MS = 800;
+
+function sleepMs(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+// Retries on network errors and 5xx (transient), never on 4xx (a bad request
+// will fail identically every time — retrying just wastes the rate limit).
+async function fetchWithRetry(url) {
+  let lastError;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return res;
+      if (res.status < 500) return res; // caller surfaces the 4xx
+      lastError = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      lastError = err;
+    }
+    if (attempt < MAX_ATTEMPTS) await sleepMs(RETRY_BASE_MS * 2 ** (attempt - 1));
+  }
+  throw lastError;
+}
+
 function toInstId(symbol) {
   // accept "BTCUSDT" or "BTC-USDT" or "BTC-USDT-SWAP"
   if (symbol.includes('-')) return symbol;
@@ -31,7 +65,7 @@ async function getCandles(symbol, bar, count, { pauseMs = 0 } = {}) {
     url.searchParams.set('bar', bar);
     url.searchParams.set('limit', String(Math.min(limit, count - candles.length + limit)));
     if (after) url.searchParams.set('after', after);
-    const res = await fetch(url);
+    const res = await fetchWithRetry(url);
     if (!res.ok) throw new Error(`okx candles ${instId}: HTTP ${res.status}`);
     const json = await res.json();
     if (json.code !== '0') throw new Error(`okx candles ${instId}: ${json.msg}`);
@@ -68,8 +102,8 @@ async function getDailyCandles(symbol, days = 300) {
 async function getFundingRate(symbol) {
   const base = toInstId(symbol).replace('-SWAP', '');
   const instId = `${base}-SWAP`;
-  const res = await fetch(`${BASE}/api/v5/public/funding-rate?instId=${instId}`);
-  if (!res.ok) return null;
+  const res = await fetchWithRetry(`${BASE}/api/v5/public/funding-rate?instId=${instId}`).catch(() => null);
+  if (!res || !res.ok) return null;
   const json = await res.json();
   const row = json?.data?.[0];
   if (!row) return null;
