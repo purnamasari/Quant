@@ -125,6 +125,32 @@ the only three that stayed positive across both time halves AND after
 cost. Even these are thin (0.01-0.04% after cost) — treat every alert as a
 low-conviction, small-edge signal, not a proven system.
 
+## Entry refinement test: daily bias + hourly pullback entry (rejected)
+
+Tested via `src/analysis/entryRefinement.js`: instead of entering at the
+close of the day a signal fires (the baseline this bot uses), wait for a
+pullback-and-bounce off EMA9 on the hourly chart during the next trading
+day, and enter there instead. 15-minute bars were the original idea, but
+Yahoo only serves 60 days of 15m history — not enough sample — so hourly
+(≈2 years of history) was used instead, with both baseline and refined
+numbers recomputed over that same shorter window for a fair comparison.
+
+| kind | setups | pullback occurred | baseline expectancy | refined (wait for pullback) |
+|---|---|---|---|---|
+| momentum | 6091 | 61.5% | 0.66% | 0.28% |
+| cup-forming | 6547 | 65.7% | 0.45% | 0.10% |
+| golden-cross | 1220 | 64.7% | 0.61% | 0.22% |
+
+**Waiting for a pullback entry made every signal worse — roughly halved
+or worse — and ~35% of setups never pulled back at all (missed
+entirely).** Likely explanation: these are breakout/continuation
+signals; strong breakouts tend to run without looking back, so the ones
+that *do* pull back to a short EMA are disproportionately the weaker,
+stalling ones — selecting for "gave me a pullback" ends up selecting
+against strength. **Not implemented in the live alerts** — entering
+immediately when the daily signal confirms remains what the data
+supports.
+
 ## Reading: what this means for the alert filter
 
 The four highest-expectancy kinds (mean-reversion, golden-cross, volume-surge,
