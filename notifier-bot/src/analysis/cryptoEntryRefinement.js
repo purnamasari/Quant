@@ -122,8 +122,9 @@ async function run({ days15m = 60, symbols = null, log = console.log } = {}) {
 }
 
 if (require.main === module) {
-  run().then(({ symbolsUsed, baselineReturns, refinedReturns, missedCount, totalSetups }) => {
-    console.log(`\nCrypto entry refinement test (~180d window, 15m entry) — ${symbolsUsed} pairs\n`);
+  const days15m = Number(process.argv[2]) || 60;
+  run({ days15m }).then(({ symbolsUsed, baselineReturns, refinedReturns, missedCount, totalSetups }) => {
+    console.log(`\nCrypto entry refinement test (~${days15m}d window, 15m entry) — ${symbolsUsed} pairs\n`);
     for (const kind of TEST_KINDS) {
       const total = totalSetups[kind] || 0;
       const missed = missedCount[kind] || 0;
