@@ -8,7 +8,7 @@ function escapeHtml(text) {
     .replace(/>/g, '&gt;');
 }
 
-const { withWib } = require('./time');
+const { withWib, withEtAndWib } = require('./time');
 
 function toneEmoji(tone) {
   if (tone === 'hot') return '🔥';
@@ -105,7 +105,10 @@ function formatDailyReminder({ macroEvents, earningsTomorrow, tokenUnlocksTomorr
   if (macroEvents.length) {
     lines.push('', '<b>Macro events:</b>');
     for (const e of macroEvents) {
-      lines.push(`• ${escapeHtml(withWib(e.time))} — ${escapeHtml(e.name)}${e.consensus && e.consensus.trim() ? ` (consensus ${escapeHtml(e.consensus)})` : ''}`);
+      // e.time is Eastern, not UTC, despite Nasdaq naming the field `gmt` —
+      // see src/time.js. dateYmd is the event's own date, needed to resolve
+      // EDT vs EST for that day.
+      lines.push(`• ${escapeHtml(withEtAndWib(e.time, dateYmd))} — ${escapeHtml(e.name)}${e.consensus && e.consensus.trim() ? ` (consensus ${escapeHtml(e.consensus)})` : ''}`);
     }
   }
 

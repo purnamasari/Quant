@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+    "why": "Nasdaq's economic calendar placed the July 2026 FOMC decision on 2026-07-30, but the Fed's own calendar schedules that meeting for July 28-29, so the decision lands on the 29th. A one-day error on the single most market-moving event of the month is worse than any other miss this bot can make, so FOMC dates come from the Fed directly rather than the aggregator.",
+    "meeting_dates_are_two_day": "The decision is always announced on the SECOND day at 14:00 ET, with the press conference at 14:30 ET. Only that second day is listed below.",
+    "maintenance": "Static — the Fed publishes the next year's dates each summer. Update this file annually; entries for past years are harmless but useless. If a year is missing entirely the bot silently falls back to whatever Nasdaq reports, which is the pre-existing behaviour.",
+    "sep_note": "`sep: true` marks meetings that also publish a Summary of Economic Projections (the dot plot), which tends to move markets more than a statement alone."
+  },
+  "decisions": [
+    { "date": "2026-01-28", "sep": false },
+    { "date": "2026-03-18", "sep": true },
+    { "date": "2026-04-29", "sep": false },
+    { "date": "2026-06-17", "sep": true },
+    { "date": "2026-07-29", "sep": false },
+    { "date": "2026-09-16", "sep": true },
+    { "date": "2026-10-28", "sep": false },
+    { "date": "2026-12-09", "sep": true }
+  ]
+}
