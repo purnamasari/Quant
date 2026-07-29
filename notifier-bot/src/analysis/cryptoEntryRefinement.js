@@ -43,8 +43,8 @@ function summarize(returns) {
   };
 }
 
-async function run({ days15m = 180, log = console.log } = {}) {
-  const universe = config.cryptoWatchlist.length ? config.cryptoWatchlist : getUniverse();
+async function run({ days15m = 60, symbols = null, log = console.log } = {}) {
+  const universe = symbols || (config.cryptoWatchlist.length ? config.cryptoWatchlist : getUniverse());
   const baselineReturns = {};
   const refinedReturns = {};
   const missedCount = {};
@@ -63,6 +63,7 @@ async function run({ days15m = 180, log = console.log } = {}) {
     }
     if (daily.length < 100 || fine.length < 500) continue;
     symbolsUsed += 1;
+    log(`[cryptoEntryRefinement] ${symbol}: fetched ${daily.length} daily + ${fine.length} 15m bars`);
 
     const fineCloses = fine.map((c) => c.close);
     const ema9 = ema(fineCloses, 9);
