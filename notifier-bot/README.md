@@ -73,6 +73,33 @@ which is intentional: none of the signals cleared that bar honestly. If
 you re-run the backtest scripts and the picture changes, update this file
 by hand.
 
+## Crypto: hourly during waking hours, not just once a day
+
+Crypto trades 24/7 and is more volatile than stocks, so `src/cryptoJob.js`
+runs separately from the daily `job.js` — on its own Routine, hourly,
+limited to ~05:00-22:00 WIB (`cron 0 22-23,0-14 * * *` in UTC). (Asked
+for every 15 minutes originally — the Routine platform's minimum interval
+is hourly, so hourly during waking hours is what's actually running.)
+
+This does **not** mean the underlying signal logic got faster or riskier
+— it's still the same daily-candle signal, backtested the same way.
+Scanning more often just catches that same daily result sooner, since
+crypto's UTC daily-candle cutoff (00:00 UTC = 07:00 WIB) no longer lines
+up with a once-a-day check at 21:30 UTC (that timing was chosen for when
+the US stock market closes, which has nothing to do with crypto). Two
+statuses:
+- **PROVISIONAL** — seen while today's candle is still forming
+  (`confirmed: false` from OKX, see `src/crypto/okx.js`). Can still
+  change or disappear before the actual close. Purely a heads-up, not
+  validated behavior — the backtest never evaluated partial candles.
+- **CONFIRMED** — seen after the candle has closed. This is the signal
+  the backtest actually measured.
+
+`src/cryptoDedup.js` sends at most one PROVISIONAL and one CONFIRMED ping
+per symbol+kind+day so hourly polling doesn't repeat the same detection.
+Stocks stay daily-only in `job.js` — market hours make a "closed vs
+forming" distinction moot there in the same way.
+
 ## Timezones and macro pings
 
 Every UTC time shown (macro events, run timestamps) also shows the WIB
@@ -151,6 +178,12 @@ you that — it would need an actual always-on server with a webhook.
   higher/lower-than-consensus scenario explanation attached to each ping.
 - `src/chart.js` — Playwright-based candlestick chart renderer.
 - `src/tracking.js` — FOLLOW/SKIP button logging (delayed, see above).
+- `src/cryptoJob.js` — crypto scan, run hourly during waking hours
+  (separate from the daily stock `job.js`) — see above.
+- `src/cryptoDedup.js` — per-day dedup so hourly crypto polling doesn't
+  repeat the same PROVISIONAL/CONFIRMED alert.
+- `src/deliverAlert.js` — shared chart+message+tracking delivery, used by
+  both `job.js` and `cryptoJob.js`.
 - `data/stock-signal-validation.md`, `data/crypto-signal-validation.md` —
   the actual backtest + correlation numbers behind the default alert
   filters in `src/config.js`. Read these before trusting the defaults.
@@ -186,13 +219,17 @@ you that — it would need an actual always-on server with a webhook.
 
 ## Scheduling
 
-Two separate Routines were set up in the Claude session that built this:
-one daily (`node src/job.js`, the signal scan + H-1 digest) and one
-hourly (`node src/macroPing.js`, the ~1h-before macro ping). If that
-session/environment goes away, both need to be scheduled some other way
-(cron on a VPS, GitHub Actions, etc.) — nothing here depends on Claude
-Code to run once scheduled with valid credentials. Genuinely uncertain
-whether this environment's filesystem (including `.env`, which is
-deliberately not in git) survives being reclaimed after idling and then
-resumed by a Routine fire — worth checking after the first few scheduled
-runs actually land.
+Three separate Routines were set up in the Claude session that built
+this:
+1. Daily (`node src/job.js`) — stock signal scan + H-1 digest, 21:30 UTC.
+2. Hourly (`node src/macroPing.js`) — ~1h-before macro event ping.
+3. Hourly, waking-hours only (`node src/cryptoJob.js`) — crypto scan,
+   `cron 0 22-23,0-14 * * *` UTC (~05:00-22:00 WIB).
+
+If that session/environment goes away, all three need to be scheduled some
+other way (cron on a VPS, GitHub Actions, etc.) — nothing here depends on
+Claude Code to run once scheduled with valid credentials. Confirmed
+working: this environment's filesystem (including `.env`, deliberately
+not in git) does survive being reclaimed after idling and resumed by a
+Routine fire — verified across several real scheduled runs, not just the
+initial manual test.

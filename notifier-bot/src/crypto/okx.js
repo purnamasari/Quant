@@ -38,6 +38,9 @@ async function getDailyCandles(symbol, days = 300) {
     const rows = json.data || [];
     if (!rows.length) break;
     // OKX returns newest-first: [ts, o, h, l, c, vol, volCcy, volCcyQuote, confirm]
+    // confirm=0 means today's candle is still forming (not closed yet) —
+    // matters when scanning intraday, since our signal thresholds were
+    // backtested against closed candles only. See cryptoJob.js.
     for (const row of rows) {
       candles.push({
         time: Math.floor(Number(row[0]) / 1000),
@@ -46,6 +49,7 @@ async function getDailyCandles(symbol, days = 300) {
         low: Number(row[3]),
         close: Number(row[4]),
         volume: Number(row[5]),
+        confirmed: row[8] === '1',
       });
     }
     after = rows[rows.length - 1][0];

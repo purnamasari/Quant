@@ -1,31 +1,31 @@
-// Daily orchestration job: scan stocks + crypto, filter to the
-// data-validated signal kinds (config.alertStockKinds / alertCryptoKinds —
-// long-only by design, see data/*-signal-validation.md for why bearish
-// mirrors aren't enabled), attach an ATR-based entry/stop/target + a
-// Long/Short direction label, attach a couple of news headlines per
-// alert, flag (not skip) imminent earnings, and push everything to
-// Telegram. Also sends a separate H-1 reminder: tomorrow's major macro
-// releases, earnings across the whole watchlist (not just symbols with a
-// live signal), and any token unlocks you've noted in
-// data/token-unlocks.json. Meant to run once a day — see README.md.
+// Daily orchestration job: scan STOCKS ONLY (crypto moved to
+// cryptoJob.js, which runs every 15 minutes during waking hours instead —
+// see that file's header for why). Filters to the data-validated signal
+// kinds (config.alertStockKinds — long-only by design, see
+// data/stock-signal-validation.md for why bearish mirrors aren't enabled),
+// attaches an ATR-based entry/stop/target + a Long/Short direction label,
+// attaches a couple of news headlines per alert, flags (not skips)
+// imminent earnings, and pushes everything to Telegram. Also sends a
+// separate H-1 reminder: tomorrow's major macro releases, earnings across
+// the whole watchlist (not just symbols with a live signal), and any
+// token unlocks noted in data/token-unlocks.json. Meant to run once a day
+// — see README.md.
 
 const config = require('./config');
-const { sendMessage, sendPhoto } = require('./telegram');
+const { sendMessage } = require('./telegram');
 const stockUniverse = require('./stock/universe');
 const { getChart, getNextEarningsDate } = require('./stock/yahoo');
 const { detectStockSignals } = require('./stock/signals');
-const cryptoUniverse = require('./crypto/universe');
-const { getDailyCandles, getFundingRate } = require('./crypto/okx');
-const { detectCryptoSignals } = require('./crypto/signals');
 const { riskPlanFor } = require('./risk');
-const { formatStockAlert, formatCryptoAlert, formatDailyReminder } = require('./format');
-const { getStockNews, getCryptoNews } = require('./news');
+const { formatStockAlert, formatDailyReminder } = require('./format');
+const { getStockNews } = require('./news');
 const { getTomorrowMacroEvents, tomorrowYmd } = require('./macro');
 const { getTomorrowUnlocks } = require('./tokenUnlocks');
 const { convictionFor } = require('./conviction');
 const { nowStampWithWib } = require('./time');
 const { ChartRenderer } = require('./chart');
-const { makeAlertId, keyboardFor, recordAlert, processPendingCallbacks } = require('./tracking');
+const { processPendingCallbacks } = require('./tracking');
+const { deliverAlerts } = require('./deliverAlert');
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -76,47 +76,6 @@ async function scanStocks() {
   return alerts;
 }
 
-async function scanCrypto() {
-  const universe = cryptoUniverse.getUniverse();
-  const alerts = [];
-  for (const symbol of universe) {
-    try {
-      const candles = await getDailyCandles(symbol, 300);
-      if (candles.length < 60) continue;
-      const funding = await getFundingRate(symbol).catch(() => null);
-      const { signals } = detectCryptoSignals(candles, funding);
-      const matched = signals.filter((s) => s.kind === 'funding-extreme' ? false : config.alertCryptoKinds.includes(s.kind));
-      // funding-extreme is untested (see README) — informational only, not
-      // wired to alert by default. Flip the line above to include it once
-      // it's backtested, or handle it as its own lower-priority message.
-      if (!matched.length) continue;
-
-      const plan = riskPlanFor(candles);
-      const coinName = symbol.split('-')[0];
-      const news = await getCryptoNews(`${coinName} crypto`, 2);
-      for (const signal of matched) {
-        const conviction = convictionFor('crypto', signal.kind);
-        alerts.push({
-          market: 'crypto',
-          symbol,
-          kind: signal.kind,
-          direction: signal.direction,
-          conviction: conviction.tier,
-          candles,
-          plan,
-          signal,
-          chartTitle: `${symbol} — ${signal.label} [${signal.direction === 'short' ? 'SHORT' : 'LONG'}]`,
-          text: formatCryptoAlert({ symbol, signal, plan, news, conviction }),
-        });
-      }
-    } catch (err) {
-      console.error(`[job] crypto ${symbol} failed:`, err.message);
-    }
-    await sleep(200);
-  }
-  return alerts;
-}
-
 async function scanEarningsTomorrow(universe) {
   const tomorrow = tomorrowYmd();
   const hits = [];
@@ -150,54 +109,27 @@ async function main() {
   // sending new alerts — see tracking.js for why this is delayed, not
   // real-time.
   const { processed } = await processPendingCallbacks();
-  if (processed) console.log(`[job] recorded ${processed} FOLLOW/SKIP decision(s) from since the last run`);
+  if (processed) console.log(`[job] recorded ${processed} FOLLOW/SKIP decision(s) since the last run`);
 
   const stockUniverseList = stockUniverse.getUniverse();
 
   const reminder = await buildDailyReminder(stockUniverseList);
   if (reminder) await sendMessage(reminder);
 
-  const [stockAlerts, cryptoAlerts] = await Promise.all([scanStocks(), scanCrypto()]);
-  const all = [...stockAlerts, ...cryptoAlerts];
-  console.log(`[job] ${all.length} alert(s) found (${stockAlerts.length} stock, ${cryptoAlerts.length} crypto)`);
+  const all = await scanStocks();
+  console.log(`[job] ${all.length} stock alert(s) found`);
 
   const renderer = new ChartRenderer();
   try {
-    for (const alert of all) {
-      const alertId = makeAlertId(alert.market, alert.symbol, alert.kind);
-
-      try {
-        const png = await renderer.render({
-          candles: alert.candles,
-          entry: alert.plan.entry,
-          stop: alert.plan.stop,
-          target: alert.plan.target,
-          title: alert.chartTitle,
-        });
-        await sendPhoto(png, alert.chartTitle);
-      } catch (err) {
-        console.error(`[job] chart render failed for ${alert.symbol}:`, err.message);
-      }
-
-      await sendMessage(alert.text, { replyMarkup: keyboardFor(alertId) });
-      recordAlert({
-        id: alertId,
-        market: alert.market,
-        symbol: alert.symbol,
-        kind: alert.kind,
-        direction: alert.direction,
-        conviction: alert.conviction,
-      });
-      await sleep(500); // Telegram rate-limit courtesy
-    }
+    await deliverAlerts(all, renderer);
   } finally {
     await renderer.close();
   }
 
   const stamp = nowStampWithWib(startedAt);
   const summary = all.length
-    ? `Scan selesai (${stamp}): ${all.length} alert dikirim di atas.`
-    : `Scan selesai (${stamp}): tidak ada sinyal hari ini.`;
+    ? `Scan saham selesai (${stamp}): ${all.length} alert dikirim di atas.`
+    : `Scan saham selesai (${stamp}): tidak ada sinyal hari ini.`;
   await sendMessage(summary);
 }
 
@@ -208,4 +140,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { scanStocks, scanCrypto, scanEarningsTomorrow, buildDailyReminder, main };
+module.exports = { scanStocks, scanEarningsTomorrow, buildDailyReminder, main };

@@ -49,9 +49,12 @@ function formatStockAlert({ symbol, name, signal, plan, earningsWarning, news, c
   return lines.filter((l) => l !== null).join('\n');
 }
 
-function formatCryptoAlert({ symbol, signal, plan, news, conviction }) {
+function formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional }) {
   const lines = [
     `${toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> (crypto) — ${escapeHtml(signal.label)} [${directionLabel(signal.direction)}]`,
+    provisional
+      ? '🟡 <b>PROVISIONAL</b> — candle harian hari ini belum closing (cutoff 00:00 UTC), sinyal ini masih bisa berubah/hilang sebelum final.'
+      : '🟢 <b>CONFIRMED</b> — dari candle harian yang sudah closing.',
     escapeHtml(signal.detail),
     convictionLine(conviction),
     '',
