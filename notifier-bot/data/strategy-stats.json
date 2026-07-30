@@ -1,0 +1,775 @@
+{
+  "_meta": {
+    "generatedBy": "src/analysis/strategyScoreboard.js",
+    "generatedAt": "2026-07-30",
+    "window": "730 daily candles per pair from data/export/",
+    "exit": "ATR*1.5 stop, no fixed target, 14-day hold",
+    "costPercent": 0.25,
+    "holdDays": 14,
+    "totalRanked": 30,
+    "randomBaseline": {
+      "all": 0.084,
+      "bigcap": 0.226,
+      "midcap": -0.01
+    },
+    "note": "avgR is expectancy in R after cost, where 1R = the ATR*1.5 stop distance. rr is REALIZED reward:risk (mean win / mean loss), not a planned target."
+  },
+  "strategies": {
+    "RARE (as shipped, scoped)": {
+      "rank": 1,
+      "of": 30,
+      "all": {
+        "n": 102,
+        "winRate": 64.7,
+        "avgR": 0.911,
+        "rr": 1.99,
+        "t": 4.91
+      },
+      "bigcap": {
+        "n": 102,
+        "winRate": 64.7,
+        "avgR": 0.911,
+        "rr": 1.99,
+        "t": 4.91
+      },
+      "midcap": null,
+      "beatsRandom": 0.827
+    },
+    "new-52w-high": {
+      "rank": 2,
+      "of": 30,
+      "all": {
+        "n": 42,
+        "winRate": 40.5,
+        "avgR": 0.897,
+        "rr": 3.7,
+        "t": 1.79
+      },
+      "bigcap": {
+        "n": 23,
+        "winRate": 52.2,
+        "avgR": 1.129,
+        "rr": 3,
+        "t": 1.71
+      },
+      "midcap": null,
+      "beatsRandom": 0.813
+    },
+    "cup-handle": {
+      "rank": 3,
+      "of": 30,
+      "all": {
+        "n": 30,
+        "winRate": 46.7,
+        "avgR": 0.756,
+        "rr": 2.75,
+        "t": 2.08
+      },
+      "bigcap": null,
+      "midcap": null,
+      "beatsRandom": 0.671
+    },
+    "RARE cup-forming+confluence": {
+      "rank": 4,
+      "of": 30,
+      "all": {
+        "n": 186,
+        "winRate": 54.3,
+        "avgR": 0.673,
+        "rr": 2.22,
+        "t": 4.94
+      },
+      "bigcap": {
+        "n": 111,
+        "winRate": 64,
+        "avgR": 0.838,
+        "rr": 1.94,
+        "t": 4.83
+      },
+      "midcap": {
+        "n": 75,
+        "winRate": 40,
+        "avgR": 0.43,
+        "rr": 2.76,
+        "t": 1.97
+      },
+      "beatsRandom": 0.589
+    },
+    "near-52w-high": {
+      "rank": 5,
+      "of": 30,
+      "all": {
+        "n": 440,
+        "winRate": 37.5,
+        "avgR": 0.407,
+        "rr": 2.73,
+        "t": 3.57
+      },
+      "bigcap": {
+        "n": 262,
+        "winRate": 37.4,
+        "avgR": 0.352,
+        "rr": 2.6,
+        "t": 2.48
+      },
+      "midcap": {
+        "n": 178,
+        "winRate": 37.6,
+        "avgR": 0.486,
+        "rr": 2.9,
+        "t": 2.58
+      },
+      "beatsRandom": 0.322
+    },
+    "ANY kind + confluence>=2": {
+      "rank": 6,
+      "of": 30,
+      "all": {
+        "n": 4269,
+        "winRate": 38,
+        "avgR": 0.323,
+        "rr": 2.51,
+        "t": 9.46
+      },
+      "bigcap": {
+        "n": 2158,
+        "winRate": 42.1,
+        "avgR": 0.436,
+        "rr": 2.44,
+        "t": 8.62
+      },
+      "midcap": {
+        "n": 2111,
+        "winRate": 33.9,
+        "avgR": 0.208,
+        "rr": 2.59,
+        "t": 4.55
+      },
+      "beatsRandom": 0.239
+    },
+    "volume-surge": {
+      "rank": 7,
+      "of": 30,
+      "all": {
+        "n": 1006,
+        "winRate": 36,
+        "avgR": 0.321,
+        "rr": 2.74,
+        "t": 4.15
+      },
+      "bigcap": {
+        "n": 359,
+        "winRate": 40.7,
+        "avgR": 0.508,
+        "rr": 2.78,
+        "t": 3.41
+      },
+      "midcap": {
+        "n": 647,
+        "winRate": 33.4,
+        "avgR": 0.218,
+        "rr": 2.7,
+        "t": 2.49
+      },
+      "beatsRandom": 0.237
+    },
+    "ma-alignment": {
+      "rank": 8,
+      "of": 30,
+      "all": {
+        "n": 1853,
+        "winRate": 35.5,
+        "avgR": 0.192,
+        "rr": 2.39,
+        "t": 4.21
+      },
+      "bigcap": {
+        "n": 905,
+        "winRate": 38.7,
+        "avgR": 0.288,
+        "rr": 2.38,
+        "t": 4.26
+      },
+      "midcap": {
+        "n": 948,
+        "winRate": 32.5,
+        "avgR": 0.101,
+        "rr": 2.41,
+        "t": 1.64
+      },
+      "beatsRandom": 0.108
+    },
+    "death-cross": {
+      "rank": 9,
+      "of": 30,
+      "all": {
+        "n": 694,
+        "winRate": 53.5,
+        "avgR": 0.115,
+        "rr": 1.12,
+        "t": 2.78
+      },
+      "bigcap": {
+        "n": 261,
+        "winRate": 51,
+        "avgR": 0.174,
+        "rr": 1.33,
+        "t": 2.28
+      },
+      "midcap": {
+        "n": 433,
+        "winRate": 55,
+        "avgR": 0.079,
+        "rr": 0.99,
+        "t": 1.66
+      },
+      "beatsRandom": 0.03
+    },
+    "cup-forming": {
+      "rank": 10,
+      "of": 30,
+      "all": {
+        "n": 885,
+        "winRate": 42.5,
+        "avgR": 0.114,
+        "rr": 1.67,
+        "t": 2.29
+      },
+      "bigcap": {
+        "n": 436,
+        "winRate": 48.6,
+        "avgR": 0.207,
+        "rr": 1.55,
+        "t": 2.97
+      },
+      "midcap": {
+        "n": 449,
+        "winRate": 36.5,
+        "avgR": 0.024,
+        "rr": 1.81,
+        "t": 0.33
+      },
+      "beatsRandom": 0.029
+    },
+    "vcp": {
+      "rank": 11,
+      "of": 30,
+      "all": {
+        "n": 2928,
+        "winRate": 34.3,
+        "avgR": 0.111,
+        "rr": 2.26,
+        "t": 2.8
+      },
+      "bigcap": {
+        "n": 1339,
+        "winRate": 38.1,
+        "avgR": 0.251,
+        "rr": 2.35,
+        "t": 3.95
+      },
+      "midcap": {
+        "n": 1589,
+        "winRate": 31.1,
+        "avgR": -0.006,
+        "rr": 2.2,
+        "t": -0.12
+      },
+      "beatsRandom": 0.027
+    },
+    "fvg-bullish": {
+      "rank": 12,
+      "of": 30,
+      "all": {
+        "n": 1771,
+        "winRate": 31.6,
+        "avgR": 0.09,
+        "rr": 2.47,
+        "t": 1.67
+      },
+      "bigcap": {
+        "n": 694,
+        "winRate": 34,
+        "avgR": 0.196,
+        "rr": 2.56,
+        "t": 2.08
+      },
+      "midcap": {
+        "n": 1077,
+        "winRate": 30.1,
+        "avgR": 0.023,
+        "rr": 2.4,
+        "t": 0.35
+      },
+      "beatsRandom": 0.006
+    },
+    "RANDOM entry (control)": {
+      "rank": 13,
+      "of": 30,
+      "all": {
+        "n": 1800,
+        "winRate": 35.7,
+        "avgR": 0.084,
+        "rr": 2.07,
+        "t": 1.89
+      },
+      "bigcap": {
+        "n": 720,
+        "winRate": 38.8,
+        "avgR": 0.226,
+        "rr": 2.23,
+        "t": 2.89
+      },
+      "midcap": {
+        "n": 1080,
+        "winRate": 33.7,
+        "avgR": -0.01,
+        "rr": 1.93,
+        "t": -0.18
+      },
+      "beatsRandom": 0
+    },
+    "rebound-down": {
+      "rank": 14,
+      "of": 30,
+      "all": {
+        "n": 3310,
+        "winRate": 45,
+        "avgR": 0.048,
+        "rr": 1.34,
+        "t": 2.17
+      },
+      "bigcap": {
+        "n": 1250,
+        "winRate": 41.7,
+        "avgR": 0.01,
+        "rr": 1.43,
+        "t": 0.27
+      },
+      "midcap": {
+        "n": 2060,
+        "winRate": 47,
+        "avgR": 0.07,
+        "rr": 1.29,
+        "t": 2.65
+      },
+      "beatsRandom": -0.037
+    },
+    "bos-bullish": {
+      "rank": 15,
+      "of": 30,
+      "all": {
+        "n": 1221,
+        "winRate": 31.9,
+        "avgR": 0.018,
+        "rr": 2.19,
+        "t": 0.33
+      },
+      "bigcap": {
+        "n": 464,
+        "winRate": 36.9,
+        "avgR": 0.173,
+        "rr": 2.22,
+        "t": 1.79
+      },
+      "midcap": {
+        "n": 757,
+        "winRate": 28.9,
+        "avgR": -0.077,
+        "rr": 2.17,
+        "t": -1.16
+      },
+      "beatsRandom": -0.066
+    },
+    "volume-surge-down": {
+      "rank": 16,
+      "of": 30,
+      "all": {
+        "n": 962,
+        "winRate": 44.2,
+        "avgR": 0.015,
+        "rr": 1.3,
+        "t": 0.39
+      },
+      "bigcap": {
+        "n": 362,
+        "winRate": 43.1,
+        "avgR": 0.015,
+        "rr": 1.36,
+        "t": 0.22
+      },
+      "midcap": {
+        "n": 600,
+        "winRate": 44.8,
+        "avgR": 0.015,
+        "rr": 1.27,
+        "t": 0.32
+      },
+      "beatsRandom": -0.07
+    },
+    "macd-bearish": {
+      "rank": 17,
+      "of": 30,
+      "all": {
+        "n": 8331,
+        "winRate": 44,
+        "avgR": 0.013,
+        "rr": 1.31,
+        "t": 0.94
+      },
+      "bigcap": {
+        "n": 3061,
+        "winRate": 42.3,
+        "avgR": 0.069,
+        "rr": 1.55,
+        "t": 2.74
+      },
+      "midcap": {
+        "n": 5270,
+        "winRate": 45,
+        "avgR": -0.02,
+        "rr": 1.17,
+        "t": -1.31
+      },
+      "beatsRandom": -0.072
+    },
+    "macd-bullish": {
+      "rank": 18,
+      "of": 30,
+      "all": {
+        "n": 9345,
+        "winRate": 32.6,
+        "avgR": 0.01,
+        "rr": 2.1,
+        "t": 0.51
+      },
+      "bigcap": {
+        "n": 3465,
+        "winRate": 36.3,
+        "avgR": 0.089,
+        "rr": 2.02,
+        "t": 2.64
+      },
+      "midcap": {
+        "n": 5880,
+        "winRate": 30.4,
+        "avgR": -0.036,
+        "rr": 2.16,
+        "t": -1.5
+      },
+      "beatsRandom": -0.074
+    },
+    "rebound": {
+      "rank": 19,
+      "of": 30,
+      "all": {
+        "n": 2922,
+        "winRate": 32.1,
+        "avgR": -0.001,
+        "rr": 2.11,
+        "t": -0.04
+      },
+      "bigcap": {
+        "n": 1165,
+        "winRate": 35.5,
+        "avgR": 0.109,
+        "rr": 2.16,
+        "t": 1.78
+      },
+      "midcap": {
+        "n": 1757,
+        "winRate": 29.9,
+        "avgR": -0.074,
+        "rr": 2.08,
+        "t": -1.69
+      },
+      "beatsRandom": -0.086
+    },
+    "mean-reversion": {
+      "rank": 20,
+      "of": 30,
+      "all": {
+        "n": 479,
+        "winRate": 39.2,
+        "avgR": -0.002,
+        "rr": 1.54,
+        "t": -0.02
+      },
+      "bigcap": {
+        "n": 167,
+        "winRate": 42.5,
+        "avgR": -0.093,
+        "rr": 1.01,
+        "t": -1.35
+      },
+      "midcap": {
+        "n": 312,
+        "winRate": 37.5,
+        "avgR": 0.047,
+        "rr": 1.87,
+        "t": 0.49
+      },
+      "beatsRandom": -0.086
+    },
+    "momentum-laggard": {
+      "rank": 21,
+      "of": 30,
+      "all": {
+        "n": 5950,
+        "winRate": 44.7,
+        "avgR": -0.018,
+        "rr": 1.19,
+        "t": -1.24
+      },
+      "bigcap": {
+        "n": 1776,
+        "winRate": 40.3,
+        "avgR": -0.167,
+        "rr": 1.02,
+        "t": -6.68
+      },
+      "midcap": {
+        "n": 4174,
+        "winRate": 46.5,
+        "avgR": 0.045,
+        "rr": 1.26,
+        "t": 2.45
+      },
+      "beatsRandom": -0.103
+    },
+    "bos-bearish": {
+      "rank": 22,
+      "of": 30,
+      "all": {
+        "n": 1468,
+        "winRate": 42.5,
+        "avgR": -0.028,
+        "rr": 1.28,
+        "t": -0.91
+      },
+      "bigcap": {
+        "n": 504,
+        "winRate": 43.3,
+        "avgR": 0.05,
+        "rr": 1.44,
+        "t": 0.84
+      },
+      "midcap": {
+        "n": 964,
+        "winRate": 42.1,
+        "avgR": -0.069,
+        "rr": 1.19,
+        "t": -1.94
+      },
+      "beatsRandom": -0.113
+    },
+    "ob-bearish": {
+      "rank": 23,
+      "of": 30,
+      "all": {
+        "n": 1443,
+        "winRate": 42.3,
+        "avgR": -0.044,
+        "rr": 1.25,
+        "t": -1.37
+      },
+      "bigcap": {
+        "n": 520,
+        "winRate": 41.2,
+        "avgR": -0.083,
+        "rr": 1.21,
+        "t": -1.58
+      },
+      "midcap": {
+        "n": 923,
+        "winRate": 42.9,
+        "avgR": -0.021,
+        "rr": 1.28,
+        "t": -0.54
+      },
+      "beatsRandom": -0.128
+    },
+    "mean-reversion-short": {
+      "rank": 24,
+      "of": 30,
+      "all": {
+        "n": 606,
+        "winRate": 39.4,
+        "avgR": -0.055,
+        "rr": 1.4,
+        "t": -1.04
+      },
+      "bigcap": {
+        "n": 241,
+        "winRate": 34.9,
+        "avgR": -0.239,
+        "rr": 1.19,
+        "t": -3.13
+      },
+      "midcap": {
+        "n": 365,
+        "winRate": 42.5,
+        "avgR": 0.067,
+        "rr": 1.51,
+        "t": 0.94
+      },
+      "beatsRandom": -0.139
+    },
+    "ob-bullish": {
+      "rank": 25,
+      "of": 30,
+      "all": {
+        "n": 1331,
+        "winRate": 31.3,
+        "avgR": -0.055,
+        "rr": 2.01,
+        "t": -1.11
+      },
+      "bigcap": {
+        "n": 509,
+        "winRate": 36,
+        "avgR": 0.075,
+        "rr": 2.01,
+        "t": 0.85
+      },
+      "midcap": {
+        "n": 822,
+        "winRate": 28.3,
+        "avgR": -0.136,
+        "rr": 2.02,
+        "t": -2.33
+      },
+      "beatsRandom": -0.139
+    },
+    "fvg-bearish": {
+      "rank": 26,
+      "of": 30,
+      "all": {
+        "n": 2221,
+        "winRate": 41.9,
+        "avgR": -0.113,
+        "rr": 1.08,
+        "t": -4.99
+      },
+      "bigcap": {
+        "n": 796,
+        "winRate": 39.8,
+        "avgR": -0.107,
+        "rr": 1.21,
+        "t": -2.58
+      },
+      "midcap": {
+        "n": 1425,
+        "winRate": 43.1,
+        "avgR": -0.116,
+        "rr": 1.01,
+        "t": -4.37
+      },
+      "beatsRandom": -0.197
+    },
+    "near-52w-low": {
+      "rank": 27,
+      "of": 30,
+      "all": {
+        "n": 256,
+        "winRate": 37.1,
+        "avgR": -0.148,
+        "rr": 1.23,
+        "t": -2.07
+      },
+      "bigcap": {
+        "n": 92,
+        "winRate": 32.6,
+        "avgR": -0.247,
+        "rr": 1.29,
+        "t": -1.93
+      },
+      "midcap": {
+        "n": 164,
+        "winRate": 39.6,
+        "avgR": -0.092,
+        "rr": 1.23,
+        "t": -1.08
+      },
+      "beatsRandom": -0.232
+    },
+    "momentum": {
+      "rank": 28,
+      "of": 30,
+      "all": {
+        "n": 2786,
+        "winRate": 27.1,
+        "avgR": -0.355,
+        "rr": 1.23,
+        "t": -16.94
+      },
+      "bigcap": {
+        "n": 1257,
+        "winRate": 31.9,
+        "avgR": -0.199,
+        "rr": 1.45,
+        "t": -5.36
+      },
+      "midcap": {
+        "n": 1529,
+        "winRate": 23.1,
+        "avgR": -0.483,
+        "rr": 0.97,
+        "t": -21.64
+      },
+      "beatsRandom": -0.44
+    },
+    "distribution": {
+      "rank": 29,
+      "of": 30,
+      "all": {
+        "n": 431,
+        "winRate": 29.2,
+        "avgR": -0.405,
+        "rr": 0.95,
+        "t": -8.39
+      },
+      "bigcap": {
+        "n": 217,
+        "winRate": 35,
+        "avgR": -0.235,
+        "rr": 1.08,
+        "t": -3.08
+      },
+      "midcap": {
+        "n": 214,
+        "winRate": 23.4,
+        "avgR": -0.576,
+        "rr": 0.81,
+        "t": -10.2
+      },
+      "beatsRandom": -0.489
+    },
+    "golden-cross": {
+      "rank": 30,
+      "of": 30,
+      "all": {
+        "n": 503,
+        "winRate": 20.3,
+        "avgR": -0.496,
+        "rr": 1.3,
+        "t": -9.28
+      },
+      "bigcap": {
+        "n": 189,
+        "winRate": 14.3,
+        "avgR": -0.698,
+        "rr": 0.93,
+        "t": -12.95
+      },
+      "midcap": {
+        "n": 314,
+        "winRate": 23.9,
+        "avgR": -0.375,
+        "rr": 1.45,
+        "t": -4.77
+      },
+      "beatsRandom": -0.581
+    }
+  }
+}

@@ -29,3 +29,6 @@ data/export-4h/
 # committing it buys no reproducibility. Delete it freely;
 # src/analysis/stockConfluenceTest.js refills it.
 data/export-stock/
+
+# Runtime state, like alert-log.json: what the scan produced on this machine.
+data/signal-feed.json

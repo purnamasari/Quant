@@ -149,6 +149,55 @@ function main() {
     ? `${String(s.n).padStart(5)} ${f(s, 'wr', 1).padStart(5)}% ${f(s, 'avgR', 3).padStart(7)} ${f(s, 'rr').padStart(5)}`
     : `${s ? String(s.n).padStart(5) : '    0'}  ${'thin'.padStart(4)}       —     —`);
 
+  // Emit the machine-readable form the live alert reads, so the message quotes
+  // measured numbers instead of restating a label. Rank is stored here rather
+  // than recomputed at send time — the alert should show the same ordering the
+  // scoreboard shows, and a rank computed live from a different sample would
+  // quietly disagree with the table it claims to come from.
+  const randomRow = rows.find((r) => r.name === 'RANDOM entry (control)');
+  const stats = {
+    _meta: {
+      generatedBy: 'src/analysis/strategyScoreboard.js',
+      generatedAt: new Date().toISOString().slice(0, 10),
+      window: '730 daily candles per pair from data/export/',
+      exit: `ATR*${ATR_STOP} stop, no fixed target, ${HOLD_DAYS}-day hold`,
+      costPercent: COST_PERCENT,
+      holdDays: HOLD_DAYS,
+      totalRanked: rows.length,
+      randomBaseline: randomRow
+        ? {
+          all: Math.round(randomRow.all.avgR * 1000) / 1000,
+          bigcap: randomRow.big ? Math.round(randomRow.big.avgR * 1000) / 1000 : null,
+          midcap: randomRow.mid ? Math.round(randomRow.mid.avgR * 1000) / 1000 : null,
+        }
+        : null,
+      note: 'avgR is expectancy in R after cost, where 1R = the ATR*1.5 stop distance. '
+        + 'rr is REALIZED reward:risk (mean win / mean loss), not a planned target.',
+    },
+    strategies: {},
+  };
+  rows.forEach((r, i) => {
+    const pack = (s) => (s && s.n >= 20
+      ? {
+        n: s.n,
+        winRate: Math.round(s.wr * 10) / 10,
+        avgR: Math.round(s.avgR * 1000) / 1000,
+        rr: s.rr === null ? null : Math.round(s.rr * 100) / 100,
+        t: Math.round(s.t * 100) / 100,
+      }
+      : null);
+    stats.strategies[r.name] = {
+      rank: i + 1,
+      of: rows.length,
+      all: pack(r.all),
+      bigcap: pack(r.big),
+      midcap: pack(r.mid),
+      beatsRandom: randomRow && r.all ? Math.round((r.all.avgR - randomRow.all.avgR) * 1000) / 1000 : null,
+    };
+  });
+  const statsFile = path.join(__dirname, '..', '..', 'data', 'strategy-stats.json');
+  fs.writeFileSync(statsFile, `${JSON.stringify(stats, null, 2)}\n`);
+
   console.log(`\nAll pairs: ${data.length} (${data.filter((d) => d.tier === 'bigcap').length} bigcap, ${data.filter((d) => d.tier === 'midcap').length} midcap)`);
   console.log(`730d daily · ATR*1.5 stop, no target, ${HOLD_DAYS}d hold · ${COST_PERCENT}% round trip\n`);
   console.log('rank strategy                          |     n    WR    avgR    RR |  BIGCAP: n    WR    avgR    RR |  MIDCAP: n    WR    avgR    RR |     t');

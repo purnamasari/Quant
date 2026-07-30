@@ -9,6 +9,8 @@ function escapeHtml(text) {
 }
 
 const { withWib, withEtAndWib } = require('./time');
+const { expectancyPercent } = require('./signalStats');
+const { REGIME_LABEL, REGIME_EMOJI } = require('./regime');
 
 function toneEmoji(tone) {
   if (tone === 'hot') return '🔥';
@@ -32,6 +34,55 @@ function newsLines(news) {
 function convictionLine(conviction) {
   if (!conviction) return null;
   return `${conviction.emoji} Conviction: <b>${conviction.label}</b> — <i>${escapeHtml(conviction.reason)}</i>`;
+}
+
+// The measured-performance block. This replaces the conviction *label* as the
+// headline, because a label is a summary of these numbers and the numbers are
+// what a decision actually needs: how much this setup has returned per trade,
+// on how many samples, versus what a coin flip returned on the same data.
+//
+// The random baseline is on the same line as the expectancy deliberately. An
+// avgR of +0.19 reads as good until you see that random entries on the same
+// bigcap pairs returned +0.23 over the same window.
+function statsLines(stats, plan) {
+  if (!stats) return [];
+  const pct = expectancyPercent(stats.avgR, plan?.stopDistancePercent);
+  const rr = stats.rr === null ? '—' : stats.rr.toFixed(2);
+  const scope = stats.capTier === 'all' ? '' : ` (${stats.capTier})`;
+  const lines = [
+    `📊 <b>${stats.avgR >= 0 ? '+' : ''}${stats.avgR.toFixed(3)}R/trade</b>` +
+    `${pct !== null ? ` ≈ ${pct >= 0 ? '+' : ''}${pct}%` : ''} · ` +
+    `WR ${stats.winRate}% · RR ${rr} · n=${stats.n}${scope}`,
+  ];
+  if (stats.randomBaseline !== null && stats.randomBaseline !== undefined) {
+    const edge = Math.round((stats.avgR - stats.randomBaseline) * 1000) / 1000;
+    lines.push(
+      `   vs entry acak ${stats.randomBaseline >= 0 ? '+' : ''}${stats.randomBaseline}R ` +
+      `→ <b>${edge >= 0 ? '+' : ''}${edge}R</b> · rank #${stats.rank}/${stats.of}`,
+    );
+  }
+  lines.push(`⏱ Exit: stop atau <b>${stats.holdDays} hari</b> (bukan di Ref level)`);
+  return lines;
+}
+
+function regimeLine(regime, conviction) {
+  if (!regime) return null;
+  const base = `${REGIME_EMOJI[regime] || ''} Regime: <b>${REGIME_LABEL[regime] || regime}</b> (BTC 200SMA)`;
+  if (!conviction?.regimeAdjusted) return base;
+  const ev = conviction.regimeEvidence;
+  const dir = ev.adjust > 0 ? 'naik' : 'turun';
+  return `${base} → conviction ${dir} 1 tier ` +
+    `<i>(${ev.avgR >= 0 ? '+' : ''}${ev.avgR}R di regime ini, n=${ev.n})</i>`;
+}
+
+// "Why high conviction", assembled from the strongest contributing factors
+// rather than written by hand per signal. Capped at three: the point is to
+// answer "why should I look at this one" in a glance, and a list of six
+// reasons is the information overload this block exists to avoid.
+function whyLines(factors) {
+  const top = (factors || []).filter(Boolean).slice(0, 3);
+  if (!top.length) return [];
+  return ['', `💡 <b>Kenapa:</b> ${top.map((f) => escapeHtml(f)).join(' · ')}`];
 }
 
 // Leverage/sizing block. Deliberately leads with max leverage rather than a
@@ -74,30 +125,30 @@ function formatStockAlert({ symbol, name, signal, plan, earningsWarning, news, c
   return lines.filter((l) => l !== null).join('\n');
 }
 
-function formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional, rareTier, position }) {
+// Ordered by what changes a decision. Measured expectancy first, then the
+// levels, then sizing, then context. The conviction label moved to the header
+// and its prose reason was dropped from the body: the reason was a sentence
+// restating numbers that now appear directly above it.
+function formatCryptoAlert({
+  symbol, signal, plan, news, conviction, provisional, rareTier, position, stats, regime, why,
+}) {
   const lines = [
-    rareTier
-      ? `⭐⭐⭐ <b>RARE HIGH-CONVICTION SETUP</b> — ${escapeHtml(symbol)} (crypto) — ${escapeHtml(signal.label)} + confluence [${directionLabel(signal.direction)}]`
-      : `${toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> (crypto) — ${escapeHtml(signal.label)} [${directionLabel(signal.direction)}]`,
+    `${conviction?.emoji ?? toneEmoji(signal.tone)} <b>${escapeHtml(symbol)}</b> — ` +
+    `${escapeHtml(signal.label)}${rareTier ? ' + confluence' : ''} ${directionLabel(signal.direction)}` +
+    `${conviction ? ` · ${conviction.label}` : ''}`,
     provisional
-      ? '🟡 <b>PROVISIONAL</b> — candle harian hari ini belum closing (cutoff 00:00 UTC), sinyal ini masih bisa berubah/hilang sebelum final.'
-      : '🟢 <b>CONFIRMED</b> — dari candle harian yang sudah closing.',
-    escapeHtml(signal.detail),
-    convictionLine(conviction),
-    rareTier
-      ? '⏳ <b>Sabar — ini setup yang butuh waktu.</b> Kejadian langka (~1x per 6-10 hari), bukan alert harian. Yang paling mahal di sini bukan salah arah, tapi tutup kecepetan: di backtest, entry yang sama menghasilkan 0.45R kalau ditutup di 1.8R, dan 0.95R kalau dibiarkan jalan sampai stop atau 14 hari.'
-      : null,
+      ? '🟡 PROVISIONAL — candle harian belum closing, sinyal masih bisa berubah.'
+      : '🟢 CONFIRMED — candle harian sudah closing.',
     '',
-    `Entry ${plan.entry} | Stop ${plan.stop} | Ref level ${plan.target}`,
-    `Stop distance: ${plan.stopDistancePercent}%`,
-    // The exit rule is stop-or-time, not target. Stated explicitly because the
-    // measured cost of closing at 1.8R was about half the edge (0.453R vs
-    // 0.949R on identical entries) — see src/risk.js for the numbers.
-    `🎯 <b>Exit: stop, atau ${plan.holdDays ?? 14} hari</b> — <i>jangan tutup di "Ref level"; itu cuma patokan, bukan target. Backtest: tutup di 1.8R menghasilkan 0.453R, dibiarkan jalan 0.949R.</i>`,
+    ...statsLines(stats, plan),
+    regimeLine(regime, conviction),
+    ...whyLines(why),
+    '',
+    `Entry <b>${plan.entry}</b> | Stop <b>${plan.stop}</b> | jarak ${Number(plan.stopDistancePercent).toFixed(2)}% | Ref ${plan.target}`,
     ...positionLines(position),
     ...newsLines(news),
     '',
-    "<i>Price data via OKX (Binance unreachable from this job's network) — verify against your actual venue before entering.</i>",
+    '<i>Harga via OKX — cek di venue kamu sebelum entry.</i>',
   ];
   return lines.filter((l) => l !== null).join('\n');
 }

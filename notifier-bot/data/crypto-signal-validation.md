@@ -694,3 +694,76 @@ authoritative one solved the timing problem and silently created a data
 problem, because the authoritative source only carried the field being
 corrected. Checking the fix end to end — not just the field that was wrong —
 would have caught it the same day.
+
+## Regime split (bull / sideways / bear) — mechanism shipped, headline cell REFUSED
+
+Question: does market regime change which strategies work, enough to re-rank
+conviction live? `src/analysis/regimeScoreboard.js`, regime from BTC via
+`src/regime.js` (200SMA position + slope), evaluated at entry from closed
+candles only.
+
+The first table looked spectacular, which is exactly when this project has been
+wrong before:
+
+| RARE tier (cup-forming + confluence) | n | WR | avgR | vs random |
+|---|---|---|---|---|
+| bull | 34 | 14.7% | -0.767 | **-0.42** (t -2.72) |
+| sideways | 40 | **92.5%** | **+2.109** | **+2.08** (t 6.51) |
+| bear | 0 | — | — | — |
+
+Read naively: the rare tier is a sideways-market strategy that is actively
+harmful in bulls. That would be the single most valuable finding in the project.
+
+**It does not survive the independence check.** Regime days do not arrive
+shuffled, they arrive in contiguous blocks:
+
+```
+bull      117 days across 10 episodes (4 lasting >=10d)
+sideways  214 days across 10 episodes (4 lasting >=10d)
+bear      180 days across  1 episode   <- the entire bear sample is ONE stretch
+```
+
+And the trades cluster inside them: 88% of the 40 sideways rare-tier trades fall
+in three months (Jul/Aug/Sep 2025), 97% of the 34 bull trades in three months
+(May/Sep/Oct 2025). So "sideways is good for this setup" is really "this setup
+did well in one summer", and every bear number in the whole table describes a
+single 180-day episode. The effective sample is 2-4 episodes per regime, not
+34-40 trades.
+
+Note also the random control: entry at random returned **-0.343R in bull** and
++0.026R in sideways. A regime labelled bull in which random longs lose money is
+a warning that the classifier is catching late-trend extension before mean
+reversion in this particular window, not "bull markets" in general.
+
+### What shipped anyway, and why that is not a contradiction
+
+The mechanism is live; the evidence bar decides what it does. A regime cell may
+move conviction one tier only if it clears all four of:
+
+1. n >= 30
+2. beats/loses to the same-regime random control at |t| > 2
+3. trades span >= 6 distinct calendar months
+4. no single month holds > 40% of the cell
+
+24 of 81 cells pass — all high-frequency signals whose trades genuinely spread
+across the window. **The rare-tier cells fail on guard 3** (5 and 4 distinct
+months), so the most eye-catching number in the table changes nothing. That is
+the guard working, not a bug.
+
+Cells that matter for currently-enabled crypto kinds:
+
+| strategy / regime | adjust | n | edge vs random | months |
+|---|---|---|---|---|
+| ma-alignment / bull | **-1** | 225 | -0.27 | 6 |
+| bos-bullish / sideways | **+1** | 362 | +0.25 | 9 |
+| bos-bullish / bear | **-1** | 312 | -0.20 | 6 |
+| RARE / any | 0 | 34-40 | — | refused |
+
+Promotion is capped at `high`: very-high stays reserved for the setup that
+earned it against its own random control, and a regime nudge is much weaker
+evidence than that.
+
+Everything tested is recorded in `data/regime-adjustments.json`, including the
+refused cells with the reason for refusal — so the next person can see what was
+measured, not just what passed. Re-run `npm run scoreboard:regime` as episodes
+accumulate; cells will start qualifying on their own without a code change.

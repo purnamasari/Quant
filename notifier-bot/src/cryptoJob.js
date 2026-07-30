@@ -29,7 +29,9 @@ const { detectCryptoSignals } = require('./crypto/signals');
 const { riskPlanFor } = require('./risk');
 const { formatCryptoAlert } = require('./format');
 const { getCryptoNews } = require('./news');
-const { convictionFor } = require('./conviction');
+const { convictionFor, shouldNotify } = require('./conviction');
+const { classifyLatest } = require('./regime');
+const { statsFor } = require('./signalStats');
 const { nowStampWithWib } = require('./time');
 const { ChartRenderer } = require('./chart');
 const { shouldSend } = require('./cryptoDedup');
@@ -50,10 +52,58 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Relative volume against the trailing 20 days, used as a "why" factor. Kept
+// descriptive rather than promoted to a filter: volume-surge is already a
+// validated kind in its own right, and turning the same information into a
+// second gate would double-count it.
+function relativeVolume(candles) {
+  if (candles.length < 21) return null;
+  const recent = candles[candles.length - 1].volume;
+  const prior = candles.slice(-21, -1);
+  const avg = prior.reduce((a, c) => a + c.volume, 0) / prior.length;
+  return avg > 0 ? Math.round((recent / avg) * 10) / 10 : null;
+}
+
+// The strongest contributing factors, strongest first, for the "why" line.
+// Only facts that are measured somewhere — no adjectives invented at send time.
+function whyFactors({ stats, conviction, regime, confluenceCount, relVol, news, rareTier }) {
+  const out = [];
+  // Recomputed from the same tier-scoped numbers the stats block prints, NOT
+  // from stats.beatsRandom, which is measured against the all-pairs baseline.
+  // Using both put two different edges for one signal in one message (+0.282R
+  // in the header, +0.237R three lines below it).
+  if (stats && stats.randomBaseline !== null && stats.randomBaseline !== undefined) {
+    const edge = Math.round((stats.avgR - stats.randomBaseline) * 1000) / 1000;
+    if (edge > 0) out.push(`edge +${edge}R di atas entry acak (rank #${stats.rank}/${stats.of}, n=${stats.n})`);
+  }
+  if (rareTier || confluenceCount >= 2) {
+    out.push(`${confluenceCount} sinyal tervalidasi barengan hari ini`);
+  }
+  if (conviction?.regimeAdjusted) {
+    out.push(`regime ${regime} historisnya ${conviction.regimeEvidence.adjust > 0 ? 'mendukung' : 'melawan'} strategi ini (n=${conviction.regimeEvidence.n})`);
+  }
+  if (relVol && relVol >= 1.5) out.push(`volume ${relVol}x rata-rata 20 hari`);
+  if (news?.length) out.push(`${news.length} berita terbaru terlampir`);
+  return out;
+}
+
 async function scanCrypto() {
   const universe = cryptoUniverse.getUniverse();
   const alerts = [];
   const failures = [];
+
+  // One regime for the whole scan, taken from BTC — see src/regime.js for why
+  // it is not computed per symbol. Failing to fetch BTC must not abort the
+  // scan; a null regime simply means no regime adjustment is applied.
+  let regime = null;
+  try {
+    const btc = await getDailyCandles('BTC-USDT', 300);
+    regime = classifyLatest(btc);
+    console.log(`[cryptoJob] market regime: ${regime ?? 'unknown'}`);
+  } catch (err) {
+    console.warn(`[cryptoJob] regime unavailable (${err.message}) — conviction will not be regime-adjusted`);
+  }
+
   for (const symbol of universe) {
     try {
       const candles = await getDailyCandles(symbol, 300);
@@ -88,23 +138,46 @@ async function scanCrypto() {
         const dedupKind = rareTier ? 'cup-forming-confluence' : signal.kind;
         if (!shouldSend(symbol, dedupKind, status)) continue;
 
-        const conviction = convictionFor('crypto', rareTier ? 'cup-forming-confluence' : signal.kind);
+        // strategyKey selects which scoreboard row's regime evidence applies.
+        // The rare tier is measured under its own name and must not inherit
+        // plain cup-forming's row.
+        const strategyKey = rareTier ? 'RARE (as shipped)' : signal.kind;
+        const conviction = convictionFor('crypto', rareTier ? 'cup-forming-confluence' : signal.kind, {
+          regime,
+          strategyKey,
+        });
+        const capTier = cryptoUniverse.DEFAULT_VALIDATION_UNIVERSE.includes(symbol) ? 'bigcap' : 'midcap';
+        const stats = statsFor({ kind: signal.kind, rareTier, capTier });
+        const relVol = relativeVolume(candles);
         const position = positionPlan({
           stopDistancePercent: plan.stopDistancePercent,
           entry: plan.entry,
           fundingRate: funding?.fundingRate,
         });
+        const why = whyFactors({
+          stats, conviction, regime, confluenceCount, relVol, news, rareTier,
+        });
+
         alerts.push({
           market: 'crypto',
           symbol,
           kind: signal.kind,
           direction: signal.direction,
           conviction: conviction.tier,
+          baseConviction: conviction.baseTier,
+          regime,
+          regimeAdjusted: conviction.regimeAdjusted,
+          notify: shouldNotify(conviction.tier),
+          rank: stats?.rank ?? null,
+          stats,
+          provisional,
           candles,
           plan,
           signal,
           chartTitle: `${symbol} — ${signal.label}${rareTier ? ' + confluence (RARE)' : ''} [${signal.direction === 'short' ? 'SHORT' : 'LONG'}]${provisional ? ' (provisional)' : ''}`,
-          text: formatCryptoAlert({ symbol, signal, plan, news, conviction, provisional, rareTier, position }),
+          text: formatCryptoAlert({
+            symbol, signal, plan, news, conviction, provisional, rareTier, position, stats, regime, why,
+          }),
         });
       }
     } catch (err) {
@@ -152,7 +225,10 @@ async function main() {
 
   const renderer = new ChartRenderer();
   try {
-    await deliverAlerts(alerts, renderer);
+    const { notified, silent } = await deliverAlerts(alerts, renderer);
+    // Reported separately because they mean different things: `silent` is the
+    // policy working, not signals being lost. They are in data/signal-feed.json.
+    console.log(`[cryptoJob] pushed ${notified}, kept silent ${silent} (dashboard only)`);
   } finally {
     await renderer.close();
   }

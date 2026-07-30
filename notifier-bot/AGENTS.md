@@ -123,6 +123,35 @@ approach. Full numbers are in the two validation documents.
 | Swing stop (from the desktop Quant app) | Wins only at pivot k=3; isolated cell |
 | Leverage above ~15x | Destroys the edge (see below) |
 
+## Notifications: HIGH and above only
+
+Detection and notification are separate decisions now. Every signal is scored
+and written to `data/signal-feed.json` (the dashboard feed); only `high` and
+`very-high` also get a Telegram push with a chart. `src/conviction.js`
+(`shouldNotify`) owns the line, `src/deliverAlert.js` enforces it.
+
+This is the same lesson as the stock shutdown: the failure mode is not missing
+a signal, it is sending so many that the rare one gets ignored. A silent signal
+is not lost — it is in the feed with `notified: false`, which is what lets you
+later tell a detector gap apart from a policy decision.
+
+Chart rendering sits inside the notify branch. It is the most expensive step in
+the pipeline and must not run for something nobody is shown.
+
+## Regime adjustment: mechanism live, evidence bar in charge
+
+`src/regime.js` classifies BTC as bull/sideways/bear (200SMA position + slope).
+`src/analysis/regimeScoreboard.js` measures every strategy per regime **against
+the same-regime random control** — comparing to zero would "prove" every
+strategy works in bulls — and writes `data/regime-adjustments.json`. Conviction
+moves at most one tier, and only for cells that clear n>=30, |t|>2 vs random,
+>=6 distinct months, and <=40% of trades in any one month.
+
+The month guards are not decoration. Over this window bear was a SINGLE 180-day
+episode, and 88% of the sideways rare-tier trades fell in three months. The
+rare tier's spectacular sideways cell (+2.11R, 92.5% WR) is **refused** by guard
+3. Do not remove those guards to "unlock" it.
+
 ## What is actually enabled
 
 - **Stocks** (`alertStockKinds`): **nothing — switched off.** momentum,

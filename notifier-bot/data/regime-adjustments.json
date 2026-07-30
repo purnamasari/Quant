@@ -1,0 +1,972 @@
+{
+  "_meta": {
+    "generatedBy": "src/analysis/regimeScoreboard.js",
+    "generatedAt": "2026-07-30",
+    "window": "730 daily candles from data/export/",
+    "exit": "ATR*1.5 stop, no fixed target, 14-day hold, 0.25% round trip",
+    "regimeSource": "BTC-USDT via src/regime.js (200SMA position + slope)",
+    "bar": {
+      "minN": 30,
+      "minAbsTVsRandom": 2,
+      "minDistinctMonths": 6,
+      "maxSingleMonthShare": 0.4
+    },
+    "note": "adjust is a conviction step: +1 promotes one tier, -1 demotes one, 0 means the evidence did not clear the bar and conviction is left alone. Cells that failed are kept with their reason so the next person can see what was tested, not just what passed.",
+    "independenceWarning": "Regime days arrive in contiguous blocks. Over this window bear was a SINGLE 180-day episode and 88% of the sideways rare-tier trades fell in three months, which is why the month-spread guards exist and why almost nothing passes yet."
+  },
+  "episodes": {
+    "bull": {
+      "days": 117,
+      "episodes": 10
+    },
+    "sideways": {
+      "days": 214,
+      "episodes": 10
+    },
+    "bear": {
+      "days": 180,
+      "episodes": 1
+    }
+  },
+  "strategies": {
+    "RARE (as shipped)": {
+      "bull": {
+        "n": 34,
+        "winRate": 14.7,
+        "avgR": -0.767,
+        "edgeVsRandom": -0.424,
+        "tVsRandom": -2.72,
+        "distinctMonths": 4,
+        "topMonthShare": 0.44,
+        "adjust": 0,
+        "reason": "only 4 distinct months, need 6"
+      },
+      "sideways": {
+        "n": 40,
+        "winRate": 92.5,
+        "avgR": 2.109,
+        "edgeVsRandom": 2.083,
+        "tVsRandom": 6.51,
+        "distinctMonths": 5,
+        "topMonthShare": 0.38,
+        "adjust": 0,
+        "reason": "only 5 distinct months, need 6"
+      },
+      "bear": {
+        "n": 0,
+        "adjust": 0,
+        "reason": "no trades in this regime"
+      }
+    },
+    "ANY+confluence [bigcap]": {
+      "bull": {
+        "n": 324,
+        "winRate": 16.4,
+        "avgR": -0.622,
+        "edgeVsRandom": -0.279,
+        "tVsRandom": -2.72,
+        "distinctMonths": 6,
+        "topMonthShare": 0.32,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "sideways": {
+        "n": 720,
+        "winRate": 54,
+        "avgR": 0.669,
+        "edgeVsRandom": 0.643,
+        "tVsRandom": 6.49,
+        "distinctMonths": 8,
+        "topMonthShare": 0.36,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 122,
+        "winRate": 32.8,
+        "avgR": -0.33,
+        "edgeVsRandom": -0.168,
+        "tVsRandom": -1.7,
+        "distinctMonths": 5,
+        "topMonthShare": 0.33,
+        "adjust": 0,
+        "reason": "t vs random = -1.70, need |t|>2"
+      }
+    },
+    "near-52w-high": {
+      "bull": {
+        "n": 27,
+        "winRate": 0,
+        "avgR": -1.031,
+        "edgeVsRandom": -0.688,
+        "tVsRandom": -7.49,
+        "distinctMonths": 5,
+        "topMonthShare": 0.41,
+        "adjust": 0,
+        "reason": "n=27 < 30"
+      },
+      "sideways": {
+        "n": 65,
+        "winRate": 46.2,
+        "avgR": 0.544,
+        "edgeVsRandom": 0.518,
+        "tVsRandom": 2.13,
+        "distinctMonths": 4,
+        "topMonthShare": 0.4,
+        "adjust": 0,
+        "reason": "only 4 distinct months, need 6"
+      },
+      "bear": {
+        "n": 17,
+        "winRate": 52.9,
+        "avgR": 0.519,
+        "edgeVsRandom": 0.681,
+        "tVsRandom": 1.65,
+        "distinctMonths": 1,
+        "topMonthShare": 1,
+        "adjust": 0,
+        "reason": "n=17 < 30"
+      }
+    },
+    "cup-forming": {
+      "bull": {
+        "n": 233,
+        "winRate": 37.8,
+        "avgR": -0.14,
+        "edgeVsRandom": 0.203,
+        "tVsRandom": 1.74,
+        "distinctMonths": 8,
+        "topMonthShare": 0.3,
+        "adjust": 0,
+        "reason": "t vs random = 1.74, need |t|>2"
+      },
+      "sideways": {
+        "n": 254,
+        "winRate": 49.2,
+        "avgR": 0.252,
+        "edgeVsRandom": 0.226,
+        "tVsRandom": 1.94,
+        "distinctMonths": 7,
+        "topMonthShare": 0.33,
+        "adjust": 0,
+        "reason": "t vs random = 1.94, need |t|>2"
+      },
+      "bear": {
+        "n": 58,
+        "winRate": 63.8,
+        "avgR": 0.767,
+        "edgeVsRandom": 0.929,
+        "tVsRandom": 4.01,
+        "distinctMonths": 5,
+        "topMonthShare": 0.47,
+        "adjust": 0,
+        "reason": "only 5 distinct months, need 6"
+      }
+    },
+    "mean-reversion-short": {
+      "bull": {
+        "n": 87,
+        "winRate": 44.8,
+        "avgR": -0.026,
+        "edgeVsRandom": 0.317,
+        "tVsRandom": 2,
+        "distinctMonths": 6,
+        "topMonthShare": 0.59,
+        "adjust": 0,
+        "reason": "t vs random = 2.00, need |t|>2"
+      },
+      "sideways": {
+        "n": 130,
+        "winRate": 50,
+        "avgR": 0.23,
+        "edgeVsRandom": 0.203,
+        "tVsRandom": 1.43,
+        "distinctMonths": 5,
+        "topMonthShare": 0.61,
+        "adjust": 0,
+        "reason": "t vs random = 1.43, need |t|>2"
+      },
+      "bear": {
+        "n": 79,
+        "winRate": 43,
+        "avgR": 0.084,
+        "edgeVsRandom": 0.246,
+        "tVsRandom": 1.45,
+        "distinctMonths": 5,
+        "topMonthShare": 0.57,
+        "adjust": 0,
+        "reason": "t vs random = 1.45, need |t|>2"
+      }
+    },
+    "volume-surge-down": {
+      "bull": {
+        "n": 116,
+        "winRate": 44,
+        "avgR": -0.114,
+        "edgeVsRandom": 0.229,
+        "tVsRandom": 1.77,
+        "distinctMonths": 7,
+        "topMonthShare": 0.41,
+        "adjust": 0,
+        "reason": "t vs random = 1.77, need |t|>2"
+      },
+      "sideways": {
+        "n": 343,
+        "winRate": 45.2,
+        "avgR": 0.158,
+        "edgeVsRandom": 0.131,
+        "tVsRandom": 1.31,
+        "distinctMonths": 10,
+        "topMonthShare": 0.22,
+        "adjust": 0,
+        "reason": "t vs random = 1.31, need |t|>2"
+      },
+      "bear": {
+        "n": 219,
+        "winRate": 54.3,
+        "avgR": 0.136,
+        "edgeVsRandom": 0.298,
+        "tVsRandom": 3.31,
+        "distinctMonths": 7,
+        "topMonthShare": 0.3,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      }
+    },
+    "macd-bearish": {
+      "bull": {
+        "n": 1627,
+        "winRate": 46.4,
+        "avgR": -0.102,
+        "edgeVsRandom": 0.241,
+        "tVsRandom": 2.66,
+        "distinctMonths": 9,
+        "topMonthShare": 0.27,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "sideways": {
+        "n": 2443,
+        "winRate": 45.2,
+        "avgR": 0.144,
+        "edgeVsRandom": 0.117,
+        "tVsRandom": 1.6,
+        "distinctMonths": 10,
+        "topMonthShare": 0.18,
+        "adjust": 0,
+        "reason": "t vs random = 1.60, need |t|>2"
+      },
+      "bear": {
+        "n": 1879,
+        "winRate": 47.3,
+        "avgR": 0.138,
+        "edgeVsRandom": 0.3,
+        "tVsRandom": 4.78,
+        "distinctMonths": 7,
+        "topMonthShare": 0.25,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      }
+    },
+    "vcp": {
+      "bull": {
+        "n": 604,
+        "winRate": 25.3,
+        "avgR": -0.224,
+        "edgeVsRandom": 0.119,
+        "tVsRandom": 1.13,
+        "distinctMonths": 8,
+        "topMonthShare": 0.31,
+        "adjust": 0,
+        "reason": "t vs random = 1.13, need |t|>2"
+      },
+      "sideways": {
+        "n": 1000,
+        "winRate": 42.1,
+        "avgR": 0.358,
+        "edgeVsRandom": 0.331,
+        "tVsRandom": 3.55,
+        "distinctMonths": 9,
+        "topMonthShare": 0.23,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 818,
+        "winRate": 37.2,
+        "avgR": -0.059,
+        "edgeVsRandom": 0.103,
+        "tVsRandom": 1.47,
+        "distinctMonths": 6,
+        "topMonthShare": 0.44,
+        "adjust": 0,
+        "reason": "t vs random = 1.47, need |t|>2"
+      }
+    },
+    "rebound-down": {
+      "bull": {
+        "n": 602,
+        "winRate": 49.7,
+        "avgR": 0.236,
+        "edgeVsRandom": 0.579,
+        "tVsRandom": 5.56,
+        "distinctMonths": 9,
+        "topMonthShare": 0.29,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "sideways": {
+        "n": 954,
+        "winRate": 46.4,
+        "avgR": 0.105,
+        "edgeVsRandom": 0.079,
+        "tVsRandom": 0.98,
+        "distinctMonths": 10,
+        "topMonthShare": 0.15,
+        "adjust": 0,
+        "reason": "t vs random = 0.98, need |t|>2"
+      },
+      "bear": {
+        "n": 956,
+        "winRate": 42.6,
+        "avgR": -0.087,
+        "edgeVsRandom": 0.075,
+        "tVsRandom": 1.14,
+        "distinctMonths": 7,
+        "topMonthShare": 0.23,
+        "adjust": 0,
+        "reason": "t vs random = 1.14, need |t|>2"
+      }
+    },
+    "bos-bearish": {
+      "bull": {
+        "n": 231,
+        "winRate": 38.5,
+        "avgR": -0.169,
+        "edgeVsRandom": 0.174,
+        "tVsRandom": 1.49,
+        "distinctMonths": 8,
+        "topMonthShare": 0.38,
+        "adjust": 0,
+        "reason": "t vs random = 1.49, need |t|>2"
+      },
+      "sideways": {
+        "n": 485,
+        "winRate": 49.3,
+        "avgR": 0.149,
+        "edgeVsRandom": 0.122,
+        "tVsRandom": 1.39,
+        "distinctMonths": 10,
+        "topMonthShare": 0.19,
+        "adjust": 0,
+        "reason": "t vs random = 1.39, need |t|>2"
+      },
+      "bear": {
+        "n": 376,
+        "winRate": 40.4,
+        "avgR": -0.028,
+        "edgeVsRandom": 0.134,
+        "tVsRandom": 1.59,
+        "distinctMonths": 6,
+        "topMonthShare": 0.22,
+        "adjust": 0,
+        "reason": "t vs random = 1.59, need |t|>2"
+      }
+    },
+    "ob-bearish": {
+      "bull": {
+        "n": 208,
+        "winRate": 47.6,
+        "avgR": 0.349,
+        "edgeVsRandom": 0.692,
+        "tVsRandom": 4.88,
+        "distinctMonths": 8,
+        "topMonthShare": 0.27,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "sideways": {
+        "n": 452,
+        "winRate": 41.8,
+        "avgR": -0.078,
+        "edgeVsRandom": -0.104,
+        "tVsRandom": -1.19,
+        "distinctMonths": 10,
+        "topMonthShare": 0.18,
+        "adjust": 0,
+        "reason": "t vs random = -1.19, need |t|>2"
+      },
+      "bear": {
+        "n": 406,
+        "winRate": 42.4,
+        "avgR": -0.139,
+        "edgeVsRandom": 0.023,
+        "tVsRandom": 0.31,
+        "distinctMonths": 7,
+        "topMonthShare": 0.22,
+        "adjust": 0,
+        "reason": "t vs random = 0.31, need |t|>2"
+      }
+    },
+    "death-cross": {
+      "bull": {
+        "n": 145,
+        "winRate": 80.7,
+        "avgR": 0.592,
+        "edgeVsRandom": 0.935,
+        "tVsRandom": 7.8,
+        "distinctMonths": 3,
+        "topMonthShare": 0.79,
+        "adjust": 0,
+        "reason": "only 3 distinct months, need 6"
+      },
+      "sideways": {
+        "n": 221,
+        "winRate": 33.9,
+        "avgR": -0.242,
+        "edgeVsRandom": -0.268,
+        "tVsRandom": -2.7,
+        "distinctMonths": 8,
+        "topMonthShare": 0.34,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 164,
+        "winRate": 39,
+        "avgR": -0.28,
+        "edgeVsRandom": -0.117,
+        "tVsRandom": -1.34,
+        "distinctMonths": 4,
+        "topMonthShare": 0.66,
+        "adjust": 0,
+        "reason": "t vs random = -1.34, need |t|>2"
+      }
+    },
+    "momentum-laggard": {
+      "bull": {
+        "n": 632,
+        "winRate": 43.2,
+        "avgR": -0.032,
+        "edgeVsRandom": 0.311,
+        "tVsRandom": 3.08,
+        "distinctMonths": 9,
+        "topMonthShare": 0.26,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "sideways": {
+        "n": 2688,
+        "winRate": 45.1,
+        "avgR": 0.075,
+        "edgeVsRandom": 0.048,
+        "tVsRandom": 0.67,
+        "distinctMonths": 10,
+        "topMonthShare": 0.28,
+        "adjust": 0,
+        "reason": "t vs random = 0.67, need |t|>2"
+      },
+      "bear": {
+        "n": 2427,
+        "winRate": 43.3,
+        "avgR": -0.141,
+        "edgeVsRandom": 0.022,
+        "tVsRandom": 0.37,
+        "distinctMonths": 7,
+        "topMonthShare": 0.33,
+        "adjust": 0,
+        "reason": "t vs random = 0.37, need |t|>2"
+      }
+    },
+    "macd-bullish": {
+      "bull": {
+        "n": 1325,
+        "winRate": 14.8,
+        "avgR": -0.542,
+        "edgeVsRandom": -0.199,
+        "tVsRandom": -2.14,
+        "distinctMonths": 9,
+        "topMonthShare": 0.28,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "sideways": {
+        "n": 3074,
+        "winRate": 38.1,
+        "avgR": 0.21,
+        "edgeVsRandom": 0.184,
+        "tVsRandom": 2.42,
+        "distinctMonths": 10,
+        "topMonthShare": 0.21,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 2689,
+        "winRate": 38.1,
+        "avgR": -0.111,
+        "edgeVsRandom": 0.051,
+        "tVsRandom": 0.86,
+        "distinctMonths": 6,
+        "topMonthShare": 0.21,
+        "adjust": 0,
+        "reason": "t vs random = 0.86, need |t|>2"
+      }
+    },
+    "fvg-bearish": {
+      "bull": {
+        "n": 311,
+        "winRate": 37.9,
+        "avgR": -0.264,
+        "edgeVsRandom": 0.079,
+        "tVsRandom": 0.77,
+        "distinctMonths": 8,
+        "topMonthShare": 0.36,
+        "adjust": 0,
+        "reason": "t vs random = 0.77, need |t|>2"
+      },
+      "sideways": {
+        "n": 796,
+        "winRate": 46.7,
+        "avgR": 0.038,
+        "edgeVsRandom": 0.012,
+        "tVsRandom": 0.15,
+        "distinctMonths": 10,
+        "topMonthShare": 0.15,
+        "adjust": 0,
+        "reason": "t vs random = 0.15, need |t|>2"
+      },
+      "bear": {
+        "n": 563,
+        "winRate": 44.2,
+        "avgR": -0.072,
+        "edgeVsRandom": 0.09,
+        "tVsRandom": 1.29,
+        "distinctMonths": 7,
+        "topMonthShare": 0.24,
+        "adjust": 0,
+        "reason": "t vs random = 1.29, need |t|>2"
+      }
+    },
+    "ma-alignment": {
+      "bull": {
+        "n": 225,
+        "winRate": 16.9,
+        "avgR": -0.609,
+        "edgeVsRandom": -0.266,
+        "tVsRandom": -2.58,
+        "distinctMonths": 6,
+        "topMonthShare": 0.35,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "sideways": {
+        "n": 437,
+        "winRate": 35.5,
+        "avgR": 0.033,
+        "edgeVsRandom": 0.007,
+        "tVsRandom": 0.07,
+        "distinctMonths": 4,
+        "topMonthShare": 0.45,
+        "adjust": 0,
+        "reason": "t vs random = 0.07, need |t|>2"
+      },
+      "bear": {
+        "n": 164,
+        "winRate": 36.6,
+        "avgR": 0.301,
+        "edgeVsRandom": 0.463,
+        "tVsRandom": 2.55,
+        "distinctMonths": 5,
+        "topMonthShare": 0.68,
+        "adjust": 0,
+        "reason": "only 5 distinct months, need 6"
+      }
+    },
+    "ob-bullish": {
+      "bull": {
+        "n": 240,
+        "winRate": 9.6,
+        "avgR": -0.718,
+        "edgeVsRandom": -0.375,
+        "tVsRandom": -3.65,
+        "distinctMonths": 7,
+        "topMonthShare": 0.22,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "sideways": {
+        "n": 339,
+        "winRate": 41.9,
+        "avgR": 0.291,
+        "edgeVsRandom": 0.265,
+        "tVsRandom": 2.14,
+        "distinctMonths": 9,
+        "topMonthShare": 0.21,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 368,
+        "winRate": 38.3,
+        "avgR": -0.076,
+        "edgeVsRandom": 0.087,
+        "tVsRandom": 0.99,
+        "distinctMonths": 6,
+        "topMonthShare": 0.25,
+        "adjust": 0,
+        "reason": "t vs random = 0.99, need |t|>2"
+      }
+    },
+    "ANY+confluence [midcap]": {
+      "bull": {
+        "n": 228,
+        "winRate": 28.9,
+        "avgR": -0.249,
+        "edgeVsRandom": 0.094,
+        "tVsRandom": 0.81,
+        "distinctMonths": 7,
+        "topMonthShare": 0.45,
+        "adjust": 0,
+        "reason": "t vs random = 0.81, need |t|>2"
+      },
+      "sideways": {
+        "n": 443,
+        "winRate": 24.8,
+        "avgR": -0.346,
+        "edgeVsRandom": -0.372,
+        "tVsRandom": -4.01,
+        "distinctMonths": 8,
+        "topMonthShare": 0.29,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 522,
+        "winRate": 37.9,
+        "avgR": 0.146,
+        "edgeVsRandom": 0.308,
+        "tVsRandom": 3.28,
+        "distinctMonths": 6,
+        "topMonthShare": 0.57,
+        "adjust": 0,
+        "reason": "57% of trades in one month, max 40%"
+      }
+    },
+    "rebound": {
+      "bull": {
+        "n": 549,
+        "winRate": 19.1,
+        "avgR": -0.462,
+        "edgeVsRandom": -0.119,
+        "tVsRandom": -1.18,
+        "distinctMonths": 9,
+        "topMonthShare": 0.27,
+        "adjust": 0,
+        "reason": "t vs random = -1.18, need |t|>2"
+      },
+      "sideways": {
+        "n": 785,
+        "winRate": 40.8,
+        "avgR": 0.291,
+        "edgeVsRandom": 0.265,
+        "tVsRandom": 2.74,
+        "distinctMonths": 9,
+        "topMonthShare": 0.2,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 877,
+        "winRate": 31.8,
+        "avgR": -0.258,
+        "edgeVsRandom": -0.096,
+        "tVsRandom": -1.43,
+        "distinctMonths": 6,
+        "topMonthShare": 0.25,
+        "adjust": 0,
+        "reason": "t vs random = -1.43, need |t|>2"
+      }
+    },
+    "near-52w-low": {
+      "bull": {
+        "n": 5,
+        "winRate": 20,
+        "avgR": -0.54,
+        "edgeVsRandom": -0.197,
+        "tVsRandom": -0.4,
+        "distinctMonths": 2,
+        "topMonthShare": 0.8,
+        "adjust": 0,
+        "reason": "n=5 < 30"
+      },
+      "sideways": {
+        "n": 53,
+        "winRate": 54.7,
+        "avgR": 0.294,
+        "edgeVsRandom": 0.268,
+        "tVsRandom": 1.44,
+        "distinctMonths": 5,
+        "topMonthShare": 0.36,
+        "adjust": 0,
+        "reason": "t vs random = 1.44, need |t|>2"
+      },
+      "bear": {
+        "n": 186,
+        "winRate": 33.9,
+        "avgR": -0.224,
+        "edgeVsRandom": -0.062,
+        "tVsRandom": -0.64,
+        "distinctMonths": 7,
+        "topMonthShare": 0.47,
+        "adjust": 0,
+        "reason": "t vs random = -0.64, need |t|>2"
+      }
+    },
+    "fvg-bullish": {
+      "bull": {
+        "n": 315,
+        "winRate": 16.2,
+        "avgR": -0.65,
+        "edgeVsRandom": -0.307,
+        "tVsRandom": -3.12,
+        "distinctMonths": 9,
+        "topMonthShare": 0.26,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "sideways": {
+        "n": 562,
+        "winRate": 47.5,
+        "avgR": 0.389,
+        "edgeVsRandom": 0.362,
+        "tVsRandom": 3.49,
+        "distinctMonths": 9,
+        "topMonthShare": 0.22,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 365,
+        "winRate": 20.3,
+        "avgR": -0.47,
+        "edgeVsRandom": -0.308,
+        "tVsRandom": -4.01,
+        "distinctMonths": 6,
+        "topMonthShare": 0.23,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      }
+    },
+    "mean-reversion": {
+      "bull": {
+        "n": 86,
+        "winRate": 16.3,
+        "avgR": -0.409,
+        "edgeVsRandom": -0.067,
+        "tVsRandom": -0.52,
+        "distinctMonths": 3,
+        "topMonthShare": 0.78,
+        "adjust": 0,
+        "reason": "t vs random = -0.52, need |t|>2"
+      },
+      "sideways": {
+        "n": 94,
+        "winRate": 59.6,
+        "avgR": 0.249,
+        "edgeVsRandom": 0.222,
+        "tVsRandom": 1.89,
+        "distinctMonths": 9,
+        "topMonthShare": 0.27,
+        "adjust": 0,
+        "reason": "t vs random = 1.89, need |t|>2"
+      },
+      "bear": {
+        "n": 190,
+        "winRate": 36.8,
+        "avgR": -0.188,
+        "edgeVsRandom": -0.026,
+        "tVsRandom": -0.32,
+        "distinctMonths": 5,
+        "topMonthShare": 0.49,
+        "adjust": 0,
+        "reason": "t vs random = -0.32, need |t|>2"
+      }
+    },
+    "bos-bullish": {
+      "bull": {
+        "n": 216,
+        "winRate": 14.8,
+        "avgR": -0.554,
+        "edgeVsRandom": -0.211,
+        "tVsRandom": -1.83,
+        "distinctMonths": 8,
+        "topMonthShare": 0.25,
+        "adjust": 0,
+        "reason": "t vs random = -1.83, need |t|>2"
+      },
+      "sideways": {
+        "n": 362,
+        "winRate": 44.2,
+        "avgR": 0.278,
+        "edgeVsRandom": 0.251,
+        "tVsRandom": 2.13,
+        "distinctMonths": 9,
+        "topMonthShare": 0.24,
+        "adjust": 1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 312,
+        "winRate": 26,
+        "avgR": -0.361,
+        "edgeVsRandom": -0.199,
+        "tVsRandom": -2.36,
+        "distinctMonths": 6,
+        "topMonthShare": 0.21,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      }
+    },
+    "momentum": {
+      "bull": {
+        "n": 255,
+        "winRate": 25.5,
+        "avgR": -0.374,
+        "edgeVsRandom": -0.031,
+        "tVsRandom": -0.27,
+        "distinctMonths": 7,
+        "topMonthShare": 0.33,
+        "adjust": 0,
+        "reason": "t vs random = -0.27, need |t|>2"
+      },
+      "sideways": {
+        "n": 861,
+        "winRate": 34.6,
+        "avgR": -0.095,
+        "edgeVsRandom": -0.121,
+        "tVsRandom": -1.48,
+        "distinctMonths": 6,
+        "topMonthShare": 0.52,
+        "adjust": 0,
+        "reason": "t vs random = -1.48, need |t|>2"
+      },
+      "bear": {
+        "n": 191,
+        "winRate": 31.9,
+        "avgR": -0.336,
+        "edgeVsRandom": -0.174,
+        "tVsRandom": -1.99,
+        "distinctMonths": 4,
+        "topMonthShare": 0.43,
+        "adjust": 0,
+        "reason": "t vs random = -1.99, need |t|>2"
+      }
+    },
+    "volume-surge": {
+      "bull": {
+        "n": 114,
+        "winRate": 27.2,
+        "avgR": -0.3,
+        "edgeVsRandom": 0.043,
+        "tVsRandom": 0.31,
+        "distinctMonths": 9,
+        "topMonthShare": 0.45,
+        "adjust": 0,
+        "reason": "t vs random = 0.31, need |t|>2"
+      },
+      "sideways": {
+        "n": 300,
+        "winRate": 36.7,
+        "avgR": -0.066,
+        "edgeVsRandom": -0.092,
+        "tVsRandom": -0.86,
+        "distinctMonths": 9,
+        "topMonthShare": 0.3,
+        "adjust": 0,
+        "reason": "t vs random = -0.86, need |t|>2"
+      },
+      "bear": {
+        "n": 249,
+        "winRate": 27.7,
+        "avgR": -0.331,
+        "edgeVsRandom": -0.169,
+        "tVsRandom": -1.88,
+        "distinctMonths": 6,
+        "topMonthShare": 0.3,
+        "adjust": 0,
+        "reason": "t vs random = -1.88, need |t|>2"
+      }
+    },
+    "distribution": {
+      "bull": {
+        "n": 30,
+        "winRate": 16.7,
+        "avgR": -0.618,
+        "edgeVsRandom": -0.276,
+        "tVsRandom": -1.58,
+        "distinctMonths": 3,
+        "topMonthShare": 0.57,
+        "adjust": 0,
+        "reason": "t vs random = -1.58, need |t|>2"
+      },
+      "sideways": {
+        "n": 181,
+        "winRate": 21,
+        "avgR": -0.466,
+        "edgeVsRandom": -0.492,
+        "tVsRandom": -4.43,
+        "distinctMonths": 8,
+        "topMonthShare": 0.19,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      },
+      "bear": {
+        "n": 220,
+        "winRate": 37.7,
+        "avgR": -0.325,
+        "edgeVsRandom": -0.163,
+        "tVsRandom": -2.07,
+        "distinctMonths": 6,
+        "topMonthShare": 0.39,
+        "adjust": -1,
+        "reason": "clears n, t-vs-random, and independence guards"
+      }
+    },
+    "golden-cross": {
+      "bull": {
+        "n": 160,
+        "winRate": 13.8,
+        "avgR": -0.691,
+        "edgeVsRandom": -0.348,
+        "tVsRandom": -3.32,
+        "distinctMonths": 5,
+        "topMonthShare": 0.47,
+        "adjust": 0,
+        "reason": "only 5 distinct months, need 6"
+      },
+      "sideways": {
+        "n": 146,
+        "winRate": 23.3,
+        "avgR": -0.498,
+        "edgeVsRandom": -0.524,
+        "tVsRandom": -5.56,
+        "distinctMonths": 5,
+        "topMonthShare": 0.37,
+        "adjust": 0,
+        "reason": "only 5 distinct months, need 6"
+      },
+      "bear": {
+        "n": 189,
+        "winRate": 22.8,
+        "avgR": -0.356,
+        "edgeVsRandom": -0.194,
+        "tVsRandom": -1.48,
+        "distinctMonths": 6,
+        "topMonthShare": 0.7,
+        "adjust": 0,
+        "reason": "t vs random = -1.48, need |t|>2"
+      }
+    }
+  }
+}
