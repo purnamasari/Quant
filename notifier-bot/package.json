@@ -28,7 +28,9 @@
     "news:hypotheses": "node src/analysis/newsHypothesesRun.js",
     "control:stock": "node src/analysis/stockConfluenceTest.js",
     "scoreboard": "node src/analysis/strategyScoreboard.js",
-    "scoreboard:regime": "node src/analysis/regimeScoreboard.js"
+    "scoreboard:regime": "node src/analysis/regimeScoreboard.js",
+    "dashboard": "node src/dashboard/server.js",
+    "structure:freq": "node src/analysis/structureFrequency.js"
   },
   "dependencies": {
     "playwright": "^1.62.0"

@@ -27,10 +27,11 @@ const cryptoUniverse = require('./crypto/universe');
 const { getDailyCandles, getFundingRate } = require('./crypto/okx');
 const { detectCryptoSignals } = require('./crypto/signals');
 const { riskPlanFor } = require('./risk');
-const { formatCryptoAlert } = require('./format');
+const { formatCryptoAlert, formatStructureAlert } = require('./format');
 const { getCryptoNews } = require('./news');
 const { convictionFor, shouldNotify } = require('./conviction');
 const { classifyLatest } = require('./regime');
+const { marketStructure } = require('./marketStructure');
 const { statsFor } = require('./signalStats');
 const { nowStampWithWib } = require('./time');
 const { ChartRenderer } = require('./chart');
@@ -189,8 +190,37 @@ async function scanCrypto() {
   return { alerts, failures, scanned: universe.length };
 }
 
+// BTC structure breaks are announced before the per-symbol scan results,
+// because they change how you read everything below them. Deduped through the
+// same store as signal alerts so a break is announced once, not once per hourly
+// run for as long as it remains the most recent bar.
+async function announceStructure() {
+  try {
+    const structure = await marketStructure();
+    let sent = 0;
+    for (const alert of structure.alerts) {
+      const dedupKey = `${alert.timeframe}-${alert.direction}`;
+      if (!shouldSend('BTC-STRUCTURE', dedupKey, 'confirmed')) continue;
+      await sendMessage(formatStructureAlert({
+        alert, daily: structure.daily, fourHour: structure.fourHour,
+      }));
+      sent += 1;
+    }
+    console.log(
+      `[cryptoJob] structure — 1D ${structure.daily.bias ?? 'unknown'}, ` +
+      `4H ${structure.fourHour.bias ?? 'unknown'}, ${sent} break alert(s)`,
+    );
+    return structure;
+  } catch (err) {
+    // Structure is context, not the job's purpose — never let it abort the scan.
+    console.warn(`[cryptoJob] structure check failed: ${err.message}`);
+    return null;
+  }
+}
+
 async function main() {
   const startedAt = new Date();
+  await announceStructure();
   const { alerts, failures, scanned } = await scanCrypto();
   const ok = scanned - failures.length;
   console.log(

@@ -153,6 +153,41 @@ function formatCryptoAlert({
   return lines.filter((l) => l !== null).join('\n');
 }
 
+// BTC break-of-structure notice. Deliberately worded as context, never as an
+// entry: the forward move after a BTC BOS measured indistinguishable from noise
+// on both 1D and 4H (every |t| < 1.7, and 4H bearish breaks were followed by a
+// small POSITIVE drift). Saying "structure broke, here is what that changes"
+// is supportable; saying "go long" is not, and this project has already paid
+// for the difference several times.
+function formatStructureAlert({ alert, daily, fourHour }) {
+  const up = alert.direction === 'bullish';
+  const arrow = up ? '🟢' : '🔴';
+  // Alignment is derived here rather than read from alert.aligned. A caller
+  // passing aligned:true while the biases actually disagree would otherwise
+  // print "searah dengan bias 1D" directly above "⚠️ konflik" in the same
+  // message — the formatter should not be able to contradict itself.
+  const alignedWithDaily = alert.timeframe !== '1D' && daily.bias === alert.direction;
+  const lines = [
+    `${arrow} <b>BTC break of structure — ${alert.timeframe} ${up ? 'BULLISH' : 'BEARISH'}</b>`,
+    `Close ${alert.close} ${up ? 'menembus' : 'menembus ke bawah'} swing ${alert.level}` +
+    `${alignedWithDaily ? ' · searah dengan bias 1D' : ''}`,
+    '',
+    `Struktur sekarang — 1D: <b>${daily.bias ? daily.bias.toUpperCase() : 'UNKNOWN'}</b>` +
+    ` · 4H: <b>${fourHour.bias ? fourHour.bias.toUpperCase() : 'UNKNOWN'}</b>` +
+    `${daily.bias && fourHour.bias && daily.bias !== fourHour.bias ? ' ⚠️ konflik' : ''}`,
+  ];
+
+  lines.push(
+    '',
+    up
+      ? '📌 Artinya untuk posisi: sinyal long dapat dukungan struktur. BUKAN entry — level di atas cuma penanda struktur, bukan setup.'
+      : '📌 Artinya untuk posisi: hati-hati menambah long baru, dan cek ulang stop posisi yang jalan. BUKAN sinyal short.',
+    `<i>Diukur: gerak setelah BOS ${alert.timeframe} BTC tidak beda dari noise (|t| &lt; 1.7, n=27-44). ` +
+    'Ini konteks, bukan edge — lihat data/crypto-signal-validation.md.</i>',
+  );
+  return lines.join('\n');
+}
+
 function formatDailyReminder({ macroEvents, earningsTomorrow, tokenUnlocksTomorrow, dateYmd }) {
   if (!macroEvents.length && !earningsTomorrow.length && !tokenUnlocksTomorrow.length) return null;
   const lines = [`🗓️ <b>H-1 Reminder untuk ${dateYmd}</b>`];
@@ -184,4 +219,4 @@ function formatDailyReminder({ macroEvents, earningsTomorrow, tokenUnlocksTomorr
   return lines.join('\n');
 }
 
-module.exports = { formatStockAlert, formatCryptoAlert, formatDailyReminder };
+module.exports = { formatStockAlert, formatCryptoAlert, formatDailyReminder, formatStructureAlert };

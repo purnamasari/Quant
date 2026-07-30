@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quant Signals</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* Mobile-first and single-column throughout: a Telegram Mini App is a phone
+     viewport in practice, so there is no desktop layout to degrade from. */
+  :root {
+    --bg: var(--tg-theme-bg-color, #17181c);
+    --card: var(--tg-theme-secondary-bg-color, #212228);
+    --text: var(--tg-theme-text-color, #f2f3f5);
+    --muted: var(--tg-theme-hint-color, #8c8f97);
+    --accent: var(--tg-theme-link-color, #5ac8fa);
+    --good: #35c46b;
+    --bad: #ff5f56;
+    --warn: #ffb020;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 17px; margin: 4px 0 2px; }
+  .sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; position: sticky; top: 0;
+          background: var(--bg); padding: 6px 0; z-index: 5; }
+  .tab { flex: 1; text-align: center; padding: 9px 4px; border-radius: 10px;
+         background: var(--card); color: var(--muted); font-size: 13px; font-weight: 600;
+         border: none; cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--accent); color: #06212e; }
+
+  .row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--card); border-radius: var(--radius); padding: 10px 12px; }
+  .stat .k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  .stat .v { font-size: 20px; font-weight: 700; margin-top: 2px; }
+
+  .card { background: var(--card); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; }
+  .card.silent { opacity: .62; }
+  .card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .sym { font-weight: 700; font-size: 16px; }
+  .kind { color: var(--muted); font-size: 12px; }
+  .pill { font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 999px;
+          text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+  .pill.very-high { background: #3b2a05; color: #ffd166; }
+  .pill.high { background: #0d3320; color: var(--good); }
+  .pill.medium { background: #2c2d34; color: var(--muted); }
+  .pill.low { background: #2c2d34; color: var(--muted); }
+  .muted-note { color: var(--warn); font-size: 11px; margin-top: 6px; }
+
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+  .metrics div { background: rgba(255,255,255,.04); border-radius: 9px; padding: 6px 8px; }
+  .metrics .k { color: var(--muted); font-size: 10px; }
+  .metrics .v { font-size: 14px; font-weight: 600; }
+  .pos { color: var(--good); } .neg { color: var(--bad); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: right; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  tr.baseline td { color: var(--warn); font-weight: 700; }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .empty { color: var(--muted); text-align: center; padding: 28px 12px; font-size: 14px; }
+  .err { background: #3a1512; color: #ffb4ae; border-radius: var(--radius); padding: 12px; font-size: 13px; }
+</style>
+</head>
+<body>
+  <h1>Quant Signals</h1>
+  <div class="sub" id="sub">memuat…</div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-view="signals" aria-selected="true">Sinyal</button>
+    <button class="tab" role="tab" data-view="ranking" aria-selected="false">Ranking</button>
+    <button class="tab" role="tab" data-view="regime" aria-selected="false">Regime</button>
+  </div>
+
+  <div id="root"></div>
+
+<script>
+(function () {
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  var root = document.getElementById('root');
+  var sub = document.getElementById('sub');
+  var state = null;
+  var view = 'signals';
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+  function sign(n, digits) {
+    if (n == null) return '—';
+    var v = Number(n).toFixed(digits == null ? 3 : digits);
+    return (Number(n) >= 0 ? '+' : '') + v;
+  }
+  function cls(n) { return n == null ? '' : (Number(n) >= 0 ? 'pos' : 'neg'); }
+  function ago(iso) {
+    var m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 60) return m + 'm';
+    if (m < 1440) return Math.floor(m / 60) + 'j';
+    return Math.floor(m / 1440) + 'h';
+  }
+
+  function signalCard(s) {
+    var tier = (s.conviction || 'low');
+    var demoted = s.baseConviction && s.baseConviction !== s.conviction;
+    return '<div class="card' + (s.notified ? '' : ' silent') + '">' +
+      '<div class="card-top">' +
+        '<div><span class="sym">' + esc(s.symbol) + '</span> ' +
+        '<span class="kind">' + esc(s.kind) + '</span></div>' +
+        '<span class="pill ' + esc(tier) + '">' + esc(tier.replace('-', ' ')) + '</span>' +
+      '</div>' +
+      '<div class="kind">' + ago(s.at) + ' lalu · ' +
+        (s.notified ? 'dikirim' : 'senyap (dashboard saja)') +
+        (s.rank ? ' · rank #' + s.rank : '') +
+        (s.provisional ? ' · provisional' : '') + '</div>' +
+      (demoted
+        ? '<div class="muted-note">conviction ' + esc(s.baseConviction) + ' → ' + esc(s.conviction) +
+          ' karena regime ' + esc(s.regime || '?') + '</div>'
+        : '') +
+      (s.stats
+        ? '<div class="metrics">' +
+            '<div><div class="k">avg R</div><div class="v ' + cls(s.stats.avgR) + '">' + sign(s.stats.avgR) + '</div></div>' +
+            '<div><div class="k">win rate</div><div class="v">' + (s.stats.winRate != null ? s.stats.winRate + '%' : '—') + '</div></div>' +
+            '<div><div class="k">n</div><div class="v">' + (s.stats.n || '—') + '</div></div>' +
+          '</div>'
+        : '') +
+      (s.entry != null
+        ? '<div class="kind" style="margin-top:8px">entry ' + esc(s.entry) + ' · stop ' + esc(s.stop) +
+          (s.stopDistancePercent != null ? ' (' + Number(s.stopDistancePercent).toFixed(2) + '%)' : '') + '</div>'
+        : '') +
+    '</div>';
+  }
+
+  function renderSignals() {
+    var c = state.counts;
+    var html =
+      '<div class="row">' +
+        '<div class="stat"><div class="k">dikirim</div><div class="v">' + c.notified + '</div></div>' +
+        '<div class="stat"><div class="k">senyap</div><div class="v">' + c.silent + '</div></div>' +
+        '<div class="stat"><div class="k">' + c.days + ' hari</div><div class="v">' + c.total + '</div></div>' +
+      '</div>';
+    if (!state.signals.length) {
+      html += '<div class="empty">Belum ada sinyal dalam ' + c.days + ' hari terakhir.</div>';
+    } else {
+      html += state.signals.map(signalCard).join('');
+    }
+    root.innerHTML = html;
+  }
+
+  function renderRanking() {
+    var base = state.randomBaseline || {};
+    var rows = state.ranked.map(function (r) {
+      var isBaseline = /RANDOM/i.test(r.name);
+      return '<tr class="' + (isBaseline ? 'baseline' : '') + '">' +
+        '<td>' + r.rank + '. ' + esc(r.name) + '</td>' +
+        '<td class="' + cls(r.all && r.all.avgR) + '">' + (r.all ? sign(r.all.avgR) : '—') + '</td>' +
+        '<td>' + (r.all && r.all.winRate != null ? r.all.winRate + '%' : '—') + '</td>' +
+        '<td>' + (r.all && r.all.rr != null ? r.all.rr.toFixed(2) : '—') + '</td>' +
+        '<td class="' + cls(r.bigcap && r.bigcap.avgR) + '">' + (r.bigcap ? sign(r.bigcap.avgR, 2) : '—') + '</td>' +
+        '<td class="' + cls(r.midcap && r.midcap.avgR) + '">' + (r.midcap ? sign(r.midcap.avgR, 2) : '—') + '</td>' +
+        '<td>' + (r.all ? r.all.n : '—') + '</td>' +
+      '</tr>';
+    }).join('');
+    root.innerHTML =
+      '<div class="card"><div class="kind">Baris <b>RANDOM</b> adalah garis batasnya. ' +
+      'Entry acak menghasilkan ' + sign(base.bigcap, 3) + 'R di bigcap dan ' + sign(base.midcap, 3) +
+      'R di midcap — strategi di bawah angka itu tidak membuktikan apa pun.</div></div>' +
+      '<div class="card scroll"><table>' +
+      '<thead><tr><th>strategi</th><th>avgR</th><th>WR</th><th>RR</th><th>big</th><th>mid</th><th>n</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function renderRegime() {
+    var ep = state.regimeEpisodes || {};
+    var rows = Object.keys(ep).map(function (k) {
+      return '<tr><td>' + esc(k) + '</td><td>' + ep[k].days + '</td><td>' + ep[k].episodes + '</td></tr>';
+    }).join('');
+    root.innerHTML =
+      '<div class="card"><div class="k" style="color:var(--muted);font-size:11px">REGIME SAAT INI</div>' +
+      '<div style="font-size:22px;font-weight:700;margin-top:2px">' +
+      esc((state.regime || 'unknown').toUpperCase()) + '</div>' +
+      '<div class="kind" style="margin-top:6px">Dari BTC 200SMA (posisi + slope).</div></div>' +
+      '<div class="card"><table><thead><tr><th>regime</th><th>hari</th><th>episode</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table>' +
+      '<div class="muted-note">Kolom episode yang penting: hari berdatangan dalam blok, jadi 180 hari ' +
+      'dalam 1 episode bukan 180 sampel independen. Itu sebabnya sebagian besar penyesuaian regime ditolak.</div>' +
+      '</div>';
+  }
+
+  function render() {
+    if (!state) return;
+    ({ signals: renderSignals, ranking: renderRanking, regime: renderRegime })[view]();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (btn) {
+    btn.addEventListener('click', function () {
+      view = btn.dataset.view;
+      Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+        b.setAttribute('aria-selected', String(b === btn));
+      });
+      render();
+    });
+  });
+
+  fetch('/api/state?days=14', {
+    headers: { 'x-telegram-init-data': (tg && tg.initData) || '' }
+  })
+    .then(function (r) {
+      if (r.status === 401) throw new Error('Tidak diizinkan — buka lewat tombol di bot Telegram.');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      state = data;
+      var m = data.meta || {};
+      sub.textContent = (m.window || '') + (m.exit ? ' · ' + m.exit : '');
+      render();
+    })
+    .catch(function (e) {
+      sub.textContent = '';
+      root.innerHTML = '<div class="err">' + esc(e.message) + '</div>';
+    });
+})();
+</script>
+</body>
+</html>

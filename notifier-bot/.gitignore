@@ -32,3 +32,6 @@ data/export-stock/
 
 # Runtime state, like alert-log.json: what the scan produced on this machine.
 data/signal-feed.json
+
+# Structure candle cache — refetchable from OKX, no reproducibility value.
+data/export-structure/

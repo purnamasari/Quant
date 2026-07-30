@@ -767,3 +767,43 @@ Everything tested is recorded in `data/regime-adjustments.json`, including the
 refused cells with the reason for refusal — so the next person can see what was
 measured, not just what passed. Re-run `npm run scoreboard:regime` as episodes
 accumulate; cells will start qualifying on their own without a code change.
+
+## BTC break of structure (1D + 4H) — shipped as CONTEXT, measured as no edge
+
+Requested as a market-regime alert. Measured first
+(`src/analysis/structureFrequency.js`) because the pivot lookback controls
+notification volume and because it would be easy to ship this as though it
+were a signal.
+
+Firing rate, walk-forward, BTC only:
+
+| pivot lookback | 1D events/month | 4H events/month |
+|---|---|---|
+| 1 (detectBoS default) | 4.1 | **29.7** |
+| 3 | 2.6 | 14.8 |
+| 5 | **1.8** | 11.0 |
+| 8 | 1.1 | **7.9** |
+
+The default lookback of 1 is a 3-bar fractal — correct for the per-symbol
+`bos-bullish` kind, and roughly once a day on 4H, which is noise wearing a
+structural costume. Shipped with **1D at lookback 5** and **4H at lookback 8**,
+and the 4H alert additionally requires agreement with the standing 1D bias
+(a 4H break against higher-timeframe structure is both the common case and the
+least informative one).
+
+Forward move after a break, for framing only:
+
+| | 1D (next 14 bars) | 4H (next 12 bars) |
+|---|---|---|
+| after bullish BOS | +1.00% (t 0.5) | +0.06% (t 0.1) |
+| after bearish BOS | -0.11% (t -0.0) | **+1.15% (t 1.7)** |
+
+**No edge on either timeframe** — every |t| below 1.7 on n=27-44. Note the 4H
+bearish row: breaks to the downside were followed by a small POSITIVE drift,
+the opposite of the intuitive read, and still not significant.
+
+So the alert is worded as context and says so in the message itself: what the
+market's shape just did, which matters for positions already open and for how
+much to trust a long signal today. It never says enter. Given how many
+plausible-sounding ideas in this document died on exactly this distinction,
+the wording is load-bearing, not decoration.
