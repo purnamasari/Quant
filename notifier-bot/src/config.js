@@ -51,9 +51,24 @@ module.exports = {
   // every test: stable across both 5y halves, stays positive after cost in
   // BOTH halves (0.11%/0.02%, where others go flat-to-negative), and low
   // redundancy (<0.1 Jaccard) with the existing three.
-  alertStockKinds: csv(process.env.ALERT_STOCK_KINDS).length
-    ? csv(process.env.ALERT_STOCK_KINDS)
-    : ['momentum', 'cup-forming', 'golden-cross', 'ob-bullish'],
+  //
+  // DISABLED as of the confluence test (src/analysis/stockConfluenceTest.js,
+  // results in data/stock-signal-validation.md). Every comment above measures
+  // these kinds against ZERO, which is the wrong benchmark: US stocks rose over
+  // the test window, so any 14-day long looks profitable. Against a
+  // random-entry control on the same symbols and window they are
+  // indistinguishable — 0.191R signal vs 0.203R random (t -0.45). Requiring
+  // confluence, the thing that made crypto cup-forming work, made stocks
+  // slightly worse (0.172R, t -1.10 vs random) and its own halves decayed
+  // 0.251R -> 0.094R.
+  //
+  // The live symptom was 59 stock alerts with charts in one scheduled run,
+  // burying the rare crypto tier that fires every 6-10 days at 0.949R. Sending
+  // dice rolls at that volume trains you to ignore the bot.
+  //
+  // Set ALERT_STOCK_KINDS in .env to re-enable (the detectors and backtests all
+  // still work) — but re-run stockConfluenceTest.js against random first.
+  alertStockKinds: csv(process.env.ALERT_STOCK_KINDS),
   // Deliberately different from stock defaults — see
   // data/crypto-signal-validation.md: golden-cross/cup-handle back-tested
   // negative on crypto even though they were among the best on stocks.

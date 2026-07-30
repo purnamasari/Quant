@@ -23,3 +23,9 @@ data/alert-log.json
 # ongoing value and would only grow the repo. Regenerate with
 # `node src/analysis/fourHourTest.js` if the 4H question is ever reopened.
 data/export-4h/
+
+# Yahoo 10y daily OHLC for the stock control test — NOT committed, unlike
+# data/export/. 30MB, and Yahoo returns it identically on every refetch, so
+# committing it buys no reproducibility. Delete it freely;
+# src/analysis/stockConfluenceTest.js refills it.
+data/export-stock/

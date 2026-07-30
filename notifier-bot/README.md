@@ -64,9 +64,11 @@ Script logic from "Super OrderBlock / FVG / BoS Tools by makuchaku & eFe"
 boolean conditions the user pasted in full. Backtested the same way as
 everything else:
 
-- **`ob-bullish` (stock) is the strongest signal in this whole bot** —
-  the only one that stays positive after a cost assumption in BOTH 5-year
-  test halves. Added to `alertStockKinds`.
+- **`ob-bullish` (stock)** was called "the strongest signal in this whole
+  bot" here — the only one staying positive after cost in BOTH 5-year test
+  halves. That held up against zero and fell apart against a random-entry
+  control (0.199R vs 0.203R). **The stock side is now switched off entirely**;
+  see "Stock alerts are off" below.
 - **`bos-bullish` (crypto)** — different result on crypto than stocks;
   added to `alertCryptoKinds`.
 - **`ob-bullish` on crypto is negative** despite being the stock star —
@@ -80,6 +82,34 @@ everything else:
 Rejection Blocks and the PPDD liquidity-sweep OB variant from the
 original indicator were not ported (lower priority, more parameters to
 get right).
+
+## Stock alerts are off
+
+`alertStockKinds` defaults to empty, and `job.js` returns before the universe
+loop rather than fetching 91 charts to produce nothing. The daily reminder
+(macro releases, earnings, token unlocks) still sends — it never depended on
+signal edge. Crypto is unaffected and still runs hourly.
+
+Why: one scheduled run sent **59 stock alerts with charts in a single batch**,
+burying the crypto rare tier that fires every 6-10 days. The intended fix was
+the confluence filter that made crypto cup-forming work, and testing it added
+the control the stock side had never had —
+
+| variant | n | avg R | t |
+|---|---|---|---|
+| no confluence (what shipped) | 100,055 | 0.191 | 37.1 |
+| confluence >= 2 | 26,345 | 0.172 | 17.1 |
+| **random entry, same hold** | **3,640** | **0.203** | **7.68** |
+
+Random entry dates win. Those t-stats of 37 and 17 are real, but they only say
+"not zero", and US stocks rose across 2016-2026, so any 14-day long looks
+profitable. Crypto passes the same control comfortably (0.949R vs 0.003R,
+t 5.39), which is why one side is off and the other is not.
+
+Everything else is intact — detectors, backtests, conviction data, charts — so
+`ALERT_STOCK_KINDS=momentum,cup-forming,golden-cross,ob-bullish` in `.env`
+restores the old behaviour. Run `npm run control:stock` first and beat the
+random column. Full write-up: `data/stock-signal-validation.md`.
 
 ## Long AND short, with a caveat
 

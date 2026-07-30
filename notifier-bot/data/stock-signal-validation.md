@@ -197,3 +197,88 @@ largely redundant trend re-descriptions rather than independent evidence.
 **Default alert filter used by `job.js`:** `mean-reversion`, `golden-cross`,
 `volume-surge`, `cup-handle` — override via code if you disagree after
 reviewing this table yourself.
+
+## 2026-07: the stock alert side is switched OFF
+
+Everything above measures these signals against **zero**. That is the wrong
+benchmark, and it took a live problem to notice: one scheduled run sent **59
+stock alerts with charts in a single batch**, burying the rare crypto tier that
+fires once every 6-10 days at 0.949R. Volume that trains you to ignore the bot
+is worse than no alerts.
+
+The obvious fix was the confluence filter — the same requirement (>=2 enabled
+kinds firing the same day) that turned crypto cup-forming from 0.44% into
+0.949R. It had never been tested on stocks. `src/analysis/stockConfluenceTest.js`
+tests it on 91 symbols x 10y, using the validated exit rule (ATR*1.5 stop, no
+fixed target, 14-day hold), 0.15% round-trip cost, **plus a random-entry
+control**: same symbols, same window, same hold, entry dates picked at random
+at the same rate the signals fire.
+
+| variant | n | avg R | t | win % |
+|---|---|---|---|---|
+| no confluence (what shipped) | 100,055 | 0.191 | 37.1 | 43.3 |
+| confluence >= 2 | 26,345 | 0.172 | 17.1 | 42.5 |
+| **RANDOM entry, same hold** | **3,640** | **0.203** | **7.68** | **44.3** |
+
+- no-confluence beats random by **-0.012R** (t -0.45) — not significant
+- confluence beats random by **-0.031R** (t -1.10) — not significant
+
+Random entry dates are the *best* of the three. The t-stats of 37.1 and 17.1
+are real but they answer "is this different from zero", and US stocks rose over
+2016-2026, so **any** 14-day long looks profitable. Once the drift is in the
+benchmark, nothing is left.
+
+Per kind, before -> after confluence:
+
+| kind | all | with confluence |
+|---|---|---|
+| momentum | 0.165R (n 34,286) | 0.136R (n 6,362) |
+| cup-forming | 0.205R (n 38,914) | 0.187R (n 8,902) |
+| golden-cross | 0.221R (n 6,929) | 0.180R (n 3,728) |
+| ob-bullish | 0.199R (n 19,926) | 0.183R (n 7,353) |
+
+Confluence makes every single kind **worse**, and its own halves decay
+0.251R (t 17.46) -> 0.094R (t 6.67). That is the same instability that
+disqualified mean-reversion and volume-surge earlier.
+
+Note `ob-bullish` — called "the strongest signal found in this entire bot"
+in the section above — lands at 0.199R against a 0.203R random baseline. The
+earlier claim was not a measurement error; it was measured against the wrong
+thing.
+
+**Contrast with crypto, which is why this is a verdict about stocks and not
+about the method.** The same control on the crypto rare tier
+(`src/analysis/trailingExitTest.js`, see data/crypto-signal-validation.md
+"The controls that make this trustworthy") gives **0.949R signal vs 0.003R
+random — +0.946R, t 5.39** (n=118 signal, n=2360 random), and it holds
+out-of-universe on 18 mid-caps (0.588R vs 0.071R). Written as the same table:
+
+| | signal | random | difference |
+|---|---|---|---|
+| crypto rare tier | 0.949R (t 5.49) | 0.003R (t 0.10) | **+0.946R, t 5.39** |
+| stock, confluence | 0.172R (t 17.1) | 0.203R (t 7.68) | -0.031R, t -1.10 |
+
+Random entry on crypto returns essentially nothing (0.003R), so its period gave
+nothing away for free and the signal number means something. Random entry on
+stocks returns 0.203R, which is the whole of what the stock signals produce.
+Note too that confluence *multiplies* the crypto edge while it *reduced* every
+stock kind — same filter, opposite effect.
+
+Cross-checked with an independent reimplementation before writing this
+(different symbol union, candles loaded from `data/export/` rather than
+refetched): rare tier 0.911R vs 0.005R random, t 4.56, split halves 0.375R ->
+1.447R. Close enough to the committed figure to trust it; the script was
+deleted rather than kept, since `trailingExitTest.js` already owns this
+measurement and two copies would drift apart.
+
+**Action: `alertStockKinds` now defaults to `[]` and `job.js` skips the stock
+scan entirely** (returning before the universe loop, so it does not spend 91
+Yahoo fetches to produce nothing). The daily reminder — macro releases,
+earnings, token unlocks — still sends; that part never depended on signal
+edge. Detectors, backtests and conviction data are all untouched, so setting
+`ALERT_STOCK_KINDS` in `.env` re-enables the old behaviour. If you do, re-run
+`stockConfluenceTest.js` first and beat the random column.
+
+**Method note worth keeping:** every rejection in this project since has come
+from a control, not from a better statistic — random entry, out-of-universe
+symbols, split halves. A large t-stat against zero has now been wrong twice.

@@ -32,6 +32,13 @@ function sleep(ms) {
 }
 
 async function scanStocks() {
+  // No enabled kinds means the stock alert side is switched off (the shipped
+  // default — see config.js). Returning before the universe loop matters: the
+  // filter on line ~42 would already produce zero alerts, but only after 91
+  // Yahoo chart fetches, and the run would then report "no signals today" as
+  // if the scan had looked and found nothing.
+  if (!config.alertStockKinds.length) return [];
+
   const universe = stockUniverse.getUniverse();
   const alerts = [];
   for (const entry of universe) {
@@ -116,8 +123,11 @@ async function main() {
   const reminder = await buildDailyReminder(stockUniverseList);
   if (reminder) await sendMessage(reminder);
 
+  const stocksEnabled = config.alertStockKinds.length > 0;
   const all = await scanStocks();
-  console.log(`[job] ${all.length} stock alert(s) found`);
+  console.log(stocksEnabled
+    ? `[job] ${all.length} stock alert(s) found`
+    : '[job] stock alerts disabled (no ALERT_STOCK_KINDS) — reminder only');
 
   const renderer = new ChartRenderer();
   try {
@@ -127,9 +137,16 @@ async function main() {
   }
 
   const stamp = nowStampWithWib(startedAt);
-  const summary = all.length
-    ? `Scan saham selesai (${stamp}): ${all.length} alert dikirim di atas.`
-    : `Scan saham selesai (${stamp}): tidak ada sinyal hari ini.`;
+  // Three distinct states, deliberately not two: "nothing fired today" and
+  // "we no longer look at stocks" mean different things to whoever reads it.
+  let summary;
+  if (!stocksEnabled) {
+    summary = `Reminder harian terkirim (${stamp}). Alert saham nonaktif — sinyal saham tidak lebih baik dari entry acak (lihat data/stock-signal-validation.md). Sinyal crypto tetap jalan lewat cryptoJob.`;
+  } else if (all.length) {
+    summary = `Scan saham selesai (${stamp}): ${all.length} alert dikirim di atas.`;
+  } else {
+    summary = `Scan saham selesai (${stamp}): tidak ada sinyal hari ini.`;
+  }
   await sendMessage(summary);
 }
 

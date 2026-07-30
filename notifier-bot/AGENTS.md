@@ -119,13 +119,19 @@ approach. Full numbers are in the two validation documents.
 | Adding more signal kinds | All 15 tested; next best is under half as good |
 | Tighter R:R targets, per-symbol tuning | No improvement; sample too thin to tune |
 | Pairs trading | Passed every within-universe check, -1.77% out-of-universe |
+| The entire stock alert side | 0.191R vs 0.203R for random entry dates |
 | Swing stop (from the desktop Quant app) | Wins only at pivot k=3; isolated cell |
 | Leverage above ~15x | Destroys the edge (see below) |
 
 ## What is actually enabled
 
-- **Stocks** (`alertStockKinds`): momentum, cup-forming, golden-cross,
-  ob-bullish.
+- **Stocks** (`alertStockKinds`): **nothing — switched off.** momentum,
+  cup-forming, golden-cross and ob-bullish were enabled until a random-entry
+  control was finally run on the stock side: 0.191R signal vs **0.203R random**
+  (t -0.45), and confluence made it worse. Their old t-stats of 17-37 measured
+  "different from zero" on a decade of rising US equities. `job.js` still sends
+  the daily reminder; it just no longer scans. Full numbers and how to re-enable:
+  `data/stock-signal-validation.md`, last section.
 - **Crypto** (`alertCryptoKinds`): ma-alignment, near-52w-high, volume-surge,
   cup-forming, bos-bullish.
 - **Rare high-conviction tier**: cup-forming plus same-day confluence with ≥2

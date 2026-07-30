@@ -25,7 +25,8 @@
     "experiment:pairs": "node src/analysis/pairsTrading.js",
     "experiment:swing-stop": "node src/analysis/swingStopTest.js",
     "experiment:rmultiple": "node src/analysis/rMultipleBacktest.js",
-    "news:hypotheses": "node src/analysis/newsHypothesesRun.js"
+    "news:hypotheses": "node src/analysis/newsHypothesesRun.js",
+    "control:stock": "node src/analysis/stockConfluenceTest.js"
   },
   "dependencies": {
     "playwright": "^1.62.0"
