@@ -26,8 +26,45 @@ have measured my reading of the strategies rather than the strategies.
 | legacy · momentum | 9 | 100% | 33.3% | **-0.27** | 0.59 | -2.44 |
 | legacy · trend_pullback | 4 | **0%** | — | — | — | — |
 
-All negative. **This is not a verdict on the strategies** — n=4 to 11 is far too
-small for one. A single trade moves the mean by roughly 0.3R at these counts.
+All negative.
+
+## Per-trade detail for H18, which sharpens the result
+
+Re-run with `--json` to get individual outcomes rather than a mean. Sorted R:
+
+```
+-1.10 -1.08 -1.08 -1.08 -1.07 -1.06 -1.05 -0.46 -0.15 +0.21 +0.24
+
+n=11  mean -0.697R  sd 0.553  se 0.167  t -4.18  95% CI [-1.02, -0.37]
+```
+
+**Correcting my first read of this:** I said n=11 was too small to conclude
+anything because one trade moves the mean ~0.3R. That is wrong for H18
+specifically. Seven of eleven trades landed within 0.05R of each other at
+≈-1.07R, so the dispersion is small (sd 0.55) and the mean is significantly
+below zero — the confidence interval excludes it. What n=11 actually limits is
+*generalization*: one month, five symbols, and essentially one market regime.
+It does not limit whether this month's mean was negative. It was.
+
+The mechanism is more damning than the mean, and it is visible only per-trade:
+
+```
+status counts: { SL: 11 }        <- every single exit was a stop
+best of 11 trades: +0.24R        <- nothing ever reached a target
+```
+
+**Zero trades hit their take-profit.** The two positive results are stops that
+had trailed above entry (the engine path recomputes R from the actual exit
+price, so an `EXITED_STOP` above entry yields a small gain — those are not
+target hits). So H18 as configured is not a strategy with a negative edge; it is
+a strategy whose reward leg never triggers inside its outcome window. That is
+the same shape as `trend_pullback` below: a plumbing result, not a performance
+one, and worth fixing before judging the idea.
+
+Note the `rr` column is hardcoded to `0` in `src/backtest/engine.ts` (line ~214)
+for all three engine strategies, so the R:R figure in the report is meaningless
+for H18/SMC/SMC_SCALP. That is a reporting gap, not a missing take-profit — the
+strategies do emit targets, they just never get reached.
 
 ## The finding that actually matters: signal rate
 
