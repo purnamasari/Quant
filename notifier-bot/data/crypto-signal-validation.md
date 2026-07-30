@@ -807,3 +807,75 @@ market's shape just did, which matters for positions already open and for how
 much to trust a long signal today. It never says enter. Given how many
 plausible-sounding ideas in this document died on exactly this distinction,
 the wording is load-bearing, not decoration.
+
+## Premium/discount location (ported from market-pulse) — tested, REJECTED
+
+`purnamasari/market-pulse` was reviewed for anything worth adopting. Of its 76
+engine modules the pick was `engine/smc/equilibrium.py`, on two grounds: it is
+orthogonal to everything here (notifier-bot scores momentum and volume shapes;
+this scores *where price sits inside its own dealing range*), and it is
+**parameter-free**. Its docstring explicitly refuses a tolerance band — "a band
+is a tunable this layer ships none of" — so it cannot be quietly overfitted by
+a parameter search, which is a property this project keeps needing.
+
+Ported faithfully to `src/equilibrium.js` (pivots, alternating swings, swing
+strength, dealing range, classification). The SMC rule under test: longs should
+be bought at a DISCOUNT, below the midpoint of the range running from the most
+recent strong swing to the most extreme opposite swing since.
+
+`src/analysis/equilibriumTest.js`, same 730d window, same exit, same cost, and
+the random control ALSO split by location — that last part is what decides it,
+because if random entries at a discount beat random entries at a premium, the
+filter is measuring the market rather than the signal.
+
+| bucket | location | n | WR | avgR |
+|---|---|---|---|---|
+| enabled kinds [bigcap] | discount | 519 | 34.5% | -0.279 |
+| enabled kinds [bigcap] | premium | 1258 | 34.2% | -0.016 |
+| **RARE tier** | discount | 10 | 40.0% | -0.371 |
+| **RARE tier** | **premium** | **75** | **60.0%** | **+0.895** |
+| RANDOM [bigcap] | discount | 390 | 39.2% | -0.160 |
+| RANDOM [bigcap] | premium | 210 | 33.3% | -0.034 |
+| RANDOM [midcap] | discount | 750 | 33.3% | -0.149 |
+| RANDOM [midcap] | premium | 330 | 24.2% | -0.371 |
+
+Net of the control:
+
+- **bigcap:** signal discount−premium **-0.263R** (t -4.21) vs random -0.126R → **net -0.137R**
+- **midcap:** signal -0.040R (t -0.72) vs random **+0.222R** (t 2.64) → **net -0.261R**
+
+**Requiring a discount makes things worse, significantly.** And the rare tier
+runs the claim over completely: it works at a **premium** (+0.895R on n=75) and
+falls apart at a discount (-0.371R on n=10, thin but pointing the same way).
+
+The midcap row is why the control was worth building. Random entries at a
+discount really did beat random at a premium there (+0.222R, t 2.64) — discount
+bars are genuinely better bars on midcaps. The signals simply failed to capture
+any of it, so applying the filter throws away more than it gains.
+
+**Mechanism, and it is one this repo has already met:** these are
+breakout/continuation signals. They fire when price is strong, which is to say
+at a premium. Filtering for a discount selects the ones that stalled — the same
+adverse selection that killed the hourly pullback entry ("selecting for 'gave me
+a pullback' ends up selecting against strength", see
+data/stock-signal-validation.md). A location filter and a momentum signal want
+opposite things.
+
+**Not implemented.** The port stays in `src/equilibrium.js` because the test is
+worth being able to re-run, and because the +0.895R premium figure on the rare
+tier independently reproduces its 0.911R headline — a useful cross-check that
+the port is sound.
+
+### Other market-pulse modules considered
+
+- `liquidity.py` (EQH/EQL pools) and `objectives.py` (draw-on-liquidity target
+  selection) — the most interesting remaining candidates. Relevant only if a
+  fixed target ever comes back, and the exit test already showed removing the
+  target is what doubled the edge (0.453R → 0.949R), so there is nothing for a
+  target selector to improve on right now.
+- `intent.py` (scalp/intraday/swing/position, each pairing a context and an
+  execution timeframe) — a clean design, but the 4H test and the FVG cascade
+  both failed here, so shorter horizons are not currently a promising direction.
+- `anticipatory.py` (limit-at-POI) — worth revisiting alongside the cost work in
+  data/profitability-plan.md, since a resting limit is exactly how the 0.25%
+  round-trip assumption gets cut.
