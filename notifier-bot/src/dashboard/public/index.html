@@ -7,7 +7,9 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   /* Mobile-first and single-column throughout: a Telegram Mini App is a phone
-     viewport in practice, so there is no desktop layout to degrade from. */
+     viewport in practice, so there is no desktop layout to degrade from.
+     Colours come from Telegram's theme variables so the page matches whichever
+     theme the client is in, with fallbacks for opening it in a browser. */
   :root {
     --bg: var(--tg-theme-bg-color, #17181c);
     --card: var(--tg-theme-secondary-bg-color, #212228);
@@ -17,71 +19,71 @@
     --good: #35c46b;
     --bad: #ff5f56;
     --warn: #ffb020;
-    --radius: 14px;
+    --r: 14px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    margin: 0;
-    padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
-    background: var(--bg);
-    color: var(--text);
+    margin: 0; padding: 10px 12px calc(28px + env(safe-area-inset-bottom));
+    background: var(--bg); color: var(--text);
     font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
-  h1 { font-size: 17px; margin: 4px 0 2px; }
-  .sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
-
-  .tabs { display: flex; gap: 6px; margin-bottom: 12px; position: sticky; top: 0;
-          background: var(--bg); padding: 6px 0; z-index: 5; }
-  .tab { flex: 1; text-align: center; padding: 9px 4px; border-radius: 10px;
-         background: var(--card); color: var(--muted); font-size: 13px; font-weight: 600;
-         border: none; cursor: pointer; }
+  h1 { font-size: 17px; margin: 2px 0; }
+  .sub { color: var(--muted); font-size: 11px; margin-bottom: 10px; }
+  .tabs { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 12px;
+          position: sticky; top: 0; background: var(--bg); padding: 6px 0; z-index: 5;
+          scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; padding: 8px 12px; border-radius: 10px; background: var(--card);
+         color: var(--muted); font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
   .tab[aria-selected="true"] { background: var(--accent); color: #06212e; }
 
   .row { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--card); border-radius: var(--radius); padding: 10px 12px; }
-  .stat .k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
-  .stat .v { font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .stat { flex: 1; background: var(--card); border-radius: var(--r); padding: 10px 12px; min-width: 0; }
+  .k { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+  .v { font-size: 19px; font-weight: 700; margin-top: 2px; }
+  .v.sm { font-size: 15px; }
 
-  .card { background: var(--card); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; }
-  .card.silent { opacity: .62; }
-  .card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .card { background: var(--card); border-radius: var(--r); padding: 12px; margin-bottom: 10px; }
+  .card.tap { cursor: pointer; }
+  .card.silent { opacity: .6; }
+  .top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   .sym { font-weight: 700; font-size: 16px; }
   .kind { color: var(--muted); font-size: 12px; }
   .pill { font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 999px;
-          text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+          text-transform: uppercase; white-space: nowrap; }
   .pill.very-high { background: #3b2a05; color: #ffd166; }
-  .pill.high { background: #0d3320; color: var(--good); }
-  .pill.medium { background: #2c2d34; color: var(--muted); }
-  .pill.low { background: #2c2d34; color: var(--muted); }
-  .muted-note { color: var(--warn); font-size: 11px; margin-top: 6px; }
+  .pill.high, .pill.bull { background: #0d3320; color: var(--good); }
+  .pill.medium, .pill.low, .pill.sideways { background: #2c2d34; color: var(--muted); }
+  .pill.bear { background: #3a1512; color: var(--bad); }
+  .note { color: var(--warn); font-size: 11px; margin-top: 6px; }
 
   .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
   .metrics div { background: rgba(255,255,255,.04); border-radius: 9px; padding: 6px 8px; }
-  .metrics .k { color: var(--muted); font-size: 10px; }
-  .metrics .v { font-size: 14px; font-weight: 600; }
+  .metrics .k { font-size: 10px; }
+  .metrics .v { font-size: 14px; }
   .pos { color: var(--good); } .neg { color: var(--bad); }
 
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { text-align: right; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,.06); }
   th:first-child, td:first-child { text-align: left; }
-  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  th { color: var(--muted); font-weight: 600; font-size: 10px; text-transform: uppercase; }
   tr.baseline td { color: var(--warn); font-weight: 700; }
   .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-  .empty { color: var(--muted); text-align: center; padding: 28px 12px; font-size: 14px; }
-  .err { background: #3a1512; color: #ffb4ae; border-radius: var(--radius); padding: 12px; font-size: 13px; }
+  .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; }
+  .cd { font-variant-numeric: tabular-nums; font-weight: 700; }
+  a { color: var(--accent); text-decoration: none; }
+  .empty { color: var(--muted); text-align: center; padding: 26px 12px; font-size: 14px; }
+  .err { background: #3a1512; color: #ffb4ae; border-radius: var(--r); padding: 12px; font-size: 13px; }
+  .back { background: none; border: none; color: var(--accent); font-size: 14px; padding: 6px 0; cursor: pointer; }
+  svg.spark { width: 100%; height: 46px; display: block; margin-top: 8px; }
 </style>
 </head>
 <body>
   <h1>Quant Signals</h1>
   <div class="sub" id="sub">memuat…</div>
-
-  <div class="tabs" role="tablist">
-    <button class="tab" role="tab" data-view="signals" aria-selected="true">Sinyal</button>
-    <button class="tab" role="tab" data-view="ranking" aria-selected="false">Ranking</button>
-    <button class="tab" role="tab" data-view="regime" aria-selected="false">Regime</button>
-  </div>
-
+  <div class="tabs" role="tablist" id="tabs"></div>
   <div id="root"></div>
 
 <script>
@@ -91,18 +93,21 @@
 
   var root = document.getElementById('root');
   var sub = document.getElementById('sub');
-  var state = null;
-  var view = 'signals';
+  var S = null, view = 'summary', token = null, timer = null;
+
+  var TABS = [
+    ['summary', 'Ringkasan'], ['regime', 'Regime'], ['flow', 'Money flow'],
+    ['signals', 'Sinyal'], ['events', 'Events'], ['news', 'News'], ['ranking', 'Ranking']
+  ];
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
     });
   }
-  function sign(n, digits) {
-    if (n == null) return '—';
-    var v = Number(n).toFixed(digits == null ? 3 : digits);
-    return (Number(n) >= 0 ? '+' : '') + v;
+  function sign(n, d) {
+    if (n == null || isNaN(n)) return '—';
+    return (Number(n) >= 0 ? '+' : '') + Number(n).toFixed(d == null ? 3 : d);
   }
   function cls(n) { return n == null ? '' : (Number(n) >= 0 ? 'pos' : 'neg'); }
   function ago(iso) {
@@ -111,121 +116,258 @@
     if (m < 1440) return Math.floor(m / 60) + 'j';
     return Math.floor(m / 1440) + 'h';
   }
+  // Countdown is computed here rather than served, so it keeps ticking between
+  // fetches instead of freezing at whatever the last response said.
+  function countdown(iso) {
+    var ms = new Date(iso).getTime() - Date.now();
+    if (ms <= 0) return { text: 'sudah rilis', past: true };
+    var s = Math.floor(ms / 1000);
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    if (h >= 24) return { text: Math.floor(h / 24) + 'h ' + (h % 24) + 'j', past: false };
+    return { text: h + 'j ' + String(m).padStart(2, '0') + 'm', past: false };
+  }
+  function wib(iso) {
+    try {
+      return new Date(iso).toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short'
+      });
+    } catch (e) { return iso; }
+  }
+  function regimePill(r) {
+    if (!r) return '<span class="pill sideways">unknown</span>';
+    return '<span class="pill ' + esc(r) + '">' + esc(r) + '</span>';
+  }
+  function sparkline(values) {
+    if (!values || values.length < 2) return '';
+    var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+    var span = (max - min) || 1;
+    var pts = values.map(function (v, i) {
+      return (i / (values.length - 1) * 100).toFixed(2) + ',' + (40 - ((v - min) / span) * 36).toFixed(2);
+    }).join(' ');
+    var up = values[values.length - 1] >= values[0];
+    return '<svg class="spark" viewBox="0 0 100 44" preserveAspectRatio="none">' +
+      '<polyline fill="none" stroke="' + (up ? '#35c46b' : '#ff5f56') +
+      '" stroke-width="1.5" points="' + pts + '"/></svg>';
+  }
 
   function signalCard(s) {
-    var tier = (s.conviction || 'low');
+    var tier = s.conviction || 'low';
     var demoted = s.baseConviction && s.baseConviction !== s.conviction;
-    return '<div class="card' + (s.notified ? '' : ' silent') + '">' +
-      '<div class="card-top">' +
-        '<div><span class="sym">' + esc(s.symbol) + '</span> ' +
-        '<span class="kind">' + esc(s.kind) + '</span></div>' +
-        '<span class="pill ' + esc(tier) + '">' + esc(tier.replace('-', ' ')) + '</span>' +
-      '</div>' +
-      '<div class="kind">' + ago(s.at) + ' lalu · ' +
-        (s.notified ? 'dikirim' : 'senyap (dashboard saja)') +
-        (s.rank ? ' · rank #' + s.rank : '') +
-        (s.provisional ? ' · provisional' : '') + '</div>' +
-      (demoted
-        ? '<div class="muted-note">conviction ' + esc(s.baseConviction) + ' → ' + esc(s.conviction) +
-          ' karena regime ' + esc(s.regime || '?') + '</div>'
-        : '') +
-      (s.stats
-        ? '<div class="metrics">' +
-            '<div><div class="k">avg R</div><div class="v ' + cls(s.stats.avgR) + '">' + sign(s.stats.avgR) + '</div></div>' +
-            '<div><div class="k">win rate</div><div class="v">' + (s.stats.winRate != null ? s.stats.winRate + '%' : '—') + '</div></div>' +
-            '<div><div class="k">n</div><div class="v">' + (s.stats.n || '—') + '</div></div>' +
-          '</div>'
-        : '') +
-      (s.entry != null
-        ? '<div class="kind" style="margin-top:8px">entry ' + esc(s.entry) + ' · stop ' + esc(s.stop) +
-          (s.stopDistancePercent != null ? ' (' + Number(s.stopDistancePercent).toFixed(2) + '%)' : '') + '</div>'
-        : '') +
-    '</div>';
-  }
-
-  function renderSignals() {
-    var c = state.counts;
-    var html =
-      '<div class="row">' +
-        '<div class="stat"><div class="k">dikirim</div><div class="v">' + c.notified + '</div></div>' +
-        '<div class="stat"><div class="k">senyap</div><div class="v">' + c.silent + '</div></div>' +
-        '<div class="stat"><div class="k">' + c.days + ' hari</div><div class="v">' + c.total + '</div></div>' +
+    return '<div class="card tap' + (s.notified ? '' : ' silent') + '" data-token="' + esc(s.symbol) + '">' +
+      '<div class="top"><div><span class="sym">' + esc(s.symbol) + '</span> ' +
+      '<span class="kind">' + esc(s.kind) + '</span></div>' +
+      '<span class="pill ' + esc(tier) + '">' + esc(tier.replace('-', ' ')) + '</span></div>' +
+      '<div class="kind">' + ago(s.at) + ' lalu · ' + (s.notified ? 'dikirim' : 'senyap') +
+      (s.rank ? ' · rank #' + s.rank : '') + (s.provisional ? ' · provisional' : '') + '</div>' +
+      (demoted ? '<div class="note">' + esc(s.baseConviction) + ' → ' + esc(s.conviction) +
+        ' karena regime ' + esc(s.regime || '?') + '</div>' : '') +
+      (s.stats ? '<div class="metrics">' +
+        '<div><div class="k">avg R</div><div class="v ' + cls(s.stats.avgR) + '">' + sign(s.stats.avgR) + '</div></div>' +
+        '<div><div class="k">WR</div><div class="v">' + (s.stats.winRate != null ? s.stats.winRate + '%' : '—') + '</div></div>' +
+        '<div><div class="k">n</div><div class="v">' + (s.stats.n || '—') + '</div></div></div>' : '') +
       '</div>';
-    if (!state.signals.length) {
-      html += '<div class="empty">Belum ada sinyal dalam ' + c.days + ' hari terakhir.</div>';
-    } else {
-      html += state.signals.map(signalCard).join('');
+  }
+
+  function vSummary() {
+    var s = S.summary, ne = s.nextEvent;
+    var h = '<div class="row">' +
+      '<div class="stat"><div class="k">crypto</div><div class="v sm">' + regimePill(s.cryptoRegime) + '</div></div>' +
+      '<div class="stat"><div class="k">saham</div><div class="v sm">' + regimePill(s.stockRegime) + '</div></div>' +
+      '</div><div class="row">' +
+      '<div class="stat"><div class="k">dikirim ' + s.days + 'h</div><div class="v">' + s.notified + '</div></div>' +
+      '<div class="stat"><div class="k">senyap</div><div class="v">' + s.silent + '</div></div>' +
+      '<div class="stat"><div class="k">total</div><div class="v">' + s.total + '</div></div></div>';
+    if (s.structureConflict && S.regimes.structure) {
+      h += '<div class="card"><div class="note">⚠️ Struktur BTC konflik: 1D ' +
+        esc(S.regimes.structure.daily || '?') + ' vs 4H ' + esc(S.regimes.structure.fourHour || '?') +
+        ' — timeframe besar dan kecil tidak sepakat.</div></div>';
     }
-    root.innerHTML = html;
+    if (ne) {
+      h += '<div class="card"><div class="k">event berikutnya</div>' +
+        '<div class="top" style="margin-top:4px"><div style="font-weight:600;min-width:0">' + esc(ne.name) + '</div>' +
+        '<div class="cd" data-cd="' + esc(ne.atUtc) + '">' + countdown(ne.atUtc).text + '</div></div>' +
+        '<div class="kind">' + wib(ne.atUtc) + ' WIB' +
+        (ne.consensus ? ' · kons. ' + esc(ne.consensus) : '') + '</div></div>';
+    }
+    var top = S.signals.filter(function (x) { return x.notified; }).slice(0, 3);
+    h += top.length ? top.map(signalCard).join('')
+      : '<div class="empty">Belum ada sinyal ber-notifikasi dalam ' + s.days + ' hari.</div>';
+    return h;
   }
 
-  function renderRanking() {
-    var base = state.randomBaseline || {};
-    var rows = state.ranked.map(function (r) {
-      var isBaseline = /RANDOM/i.test(r.name);
-      return '<tr class="' + (isBaseline ? 'baseline' : '') + '">' +
-        '<td>' + r.rank + '. ' + esc(r.name) + '</td>' +
-        '<td class="' + cls(r.all && r.all.avgR) + '">' + (r.all ? sign(r.all.avgR) : '—') + '</td>' +
-        '<td>' + (r.all && r.all.winRate != null ? r.all.winRate + '%' : '—') + '</td>' +
-        '<td>' + (r.all && r.all.rr != null ? r.all.rr.toFixed(2) : '—') + '</td>' +
-        '<td class="' + cls(r.bigcap && r.bigcap.avgR) + '">' + (r.bigcap ? sign(r.bigcap.avgR, 2) : '—') + '</td>' +
-        '<td class="' + cls(r.midcap && r.midcap.avgR) + '">' + (r.midcap ? sign(r.midcap.avgR, 2) : '—') + '</td>' +
-        '<td>' + (r.all ? r.all.n : '—') + '</td>' +
-      '</tr>';
-    }).join('');
-    root.innerHTML =
-      '<div class="card"><div class="kind">Baris <b>RANDOM</b> adalah garis batasnya. ' +
-      'Entry acak menghasilkan ' + sign(base.bigcap, 3) + 'R di bigcap dan ' + sign(base.midcap, 3) +
-      'R di midcap — strategi di bawah angka itu tidak membuktikan apa pun.</div></div>' +
-      '<div class="card scroll"><table>' +
-      '<thead><tr><th>strategi</th><th>avgR</th><th>WR</th><th>RR</th><th>big</th><th>mid</th><th>n</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table></div>';
-  }
-
-  function renderRegime() {
-    var ep = state.regimeEpisodes || {};
+  function vRegime() {
+    var r = S.regimes || {}, ep = S.regimeEpisodes || {};
+    function block(x, title) {
+      if (!x) return '';
+      return '<div class="card"><div class="k">' + title + ' — ' + esc(x.symbol) + '</div>' +
+        '<div class="v">' + regimePill(x.regime) + '</div>' +
+        (x.error ? '<div class="note">' + esc(x.error) + '</div>'
+          : '<div class="kind" style="margin-top:6px">' + (x.last != null ? esc(x.last) : '—') +
+            ' · 7d <span class="' + cls(x.changePercent) + '">' + sign(x.changePercent, 1) + '%</span></div>') +
+        '</div>';
+    }
+    var h = block(r.crypto, 'CRYPTO') + block(r.stock, 'SAHAM');
+    if (r.structure) {
+      h += '<div class="card"><div class="k">struktur BTC</div>' +
+        '<div style="margin-top:4px">1D ' + regimePill(r.structure.daily) +
+        ' &nbsp; 4H ' + regimePill(r.structure.fourHour) + '</div>' +
+        (r.structure.conflict ? '<div class="note">⚠️ konflik antar timeframe</div>' : '') +
+        '<div class="kind" style="margin-top:6px">BOS dipakai sebagai konteks, bukan entry — ' +
+        'gerak setelah break tidak beda dari noise.</div></div>';
+    }
     var rows = Object.keys(ep).map(function (k) {
       return '<tr><td>' + esc(k) + '</td><td>' + ep[k].days + '</td><td>' + ep[k].episodes + '</td></tr>';
     }).join('');
-    root.innerHTML =
-      '<div class="card"><div class="k" style="color:var(--muted);font-size:11px">REGIME SAAT INI</div>' +
-      '<div style="font-size:22px;font-weight:700;margin-top:2px">' +
-      esc((state.regime || 'unknown').toUpperCase()) + '</div>' +
-      '<div class="kind" style="margin-top:6px">Dari BTC 200SMA (posisi + slope).</div></div>' +
-      '<div class="card"><table><thead><tr><th>regime</th><th>hari</th><th>episode</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table>' +
-      '<div class="muted-note">Kolom episode yang penting: hari berdatangan dalam blok, jadi 180 hari ' +
-      'dalam 1 episode bukan 180 sampel independen. Itu sebabnya sebagian besar penyesuaian regime ditolak.</div>' +
-      '</div>';
+    if (rows) {
+      h += '<div class="card"><table><thead><tr><th>regime</th><th>hari</th><th>episode</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table><div class="note">Kolom episode yang penting: hari datang ' +
+        'dalam blok, jadi 180 hari dalam 1 episode bukan 180 sampel independen.</div></div>';
+    }
+    return h;
+  }
+
+  function vFlow() {
+    if (!S.moneyFlow || !S.moneyFlow.length) return '<div class="empty">Data flow tidak tersedia.</div>';
+    var rows = S.moneyFlow.map(function (f) {
+      var pct = f.netFlowRatio == null ? 50 : (f.netFlowRatio + 1) / 2 * 100;
+      var col = (f.netFlowRatio || 0) >= 0 ? 'var(--good)' : 'var(--bad)';
+      return '<div class="card"><div class="top"><span class="sym">' +
+        esc(f.symbol.replace('-USDT', '')) + '</span>' +
+        '<span class="' + cls(f.changePercent) + '">' + sign(f.changePercent, 1) + '% 7d</span></div>' +
+        '<div class="bar"><i style="width:' + pct.toFixed(0) + '%;background:' + col + '"></i></div>' +
+        '<div class="kind" style="margin-top:6px">net flow ' + sign(f.netFlowRatio, 2) +
+        ' · volume ' + sign(f.volumeChangePercent, 0) + '%' +
+        (f.fundingRate != null ? ' · funding ' + (f.fundingRate * 100).toFixed(3) + '%' : '') +
+        '</div></div>';
+    }).join('');
+    return '<div class="card"><div class="kind">Proksi, bukan order flow sungguhan: volume ditimbang ' +
+      'arah candle 7 hari terakhir vs 7 hari sebelumnya, plus funding rate perp. ' +
+      '<b>Belum divalidasi sebagai prediktif</b> — konteks, bukan entry.</div></div>' + rows;
+  }
+
+  function vSignals() {
+    if (!S.signals.length) return '<div class="empty">Belum ada sinyal.</div>';
+    return '<div class="card"><div class="kind">Ketuk kartu untuk detail token.</div></div>' +
+      S.signals.map(signalCard).join('');
+  }
+
+  function vEvents() {
+    if (!S.events || !S.events.length) return '<div class="empty">Tidak ada event terdekat.</div>';
+    return S.events.map(function (e) {
+      var c = e.atUtc ? countdown(e.atUtc) : null;
+      return '<div class="card"><div class="top"><div style="font-weight:600;min-width:0">' + esc(e.name) + '</div>' +
+        (c ? '<div class="cd" data-cd="' + esc(e.atUtc) + '">' + c.text + '</div>' : '') +
+        '</div><div class="kind">' + (e.atUtc ? wib(e.atUtc) + ' WIB' : 'jadwal belum pasti') +
+        (e.consensus ? ' · kons. ' + esc(e.consensus) : '') +
+        (e.actual ? ' · aktual <b>' + esc(e.actual) + '</b>' : '') + '</div></div>';
+    }).join('');
+  }
+
+  function vNews() {
+    if (!S.news || !S.news.length) return '<div class="empty">Tidak ada berita.</div>';
+    return S.news.map(function (n) {
+      return '<div class="card">' + (n.link
+        ? '<a href="' + esc(n.link) + '" target="_blank" rel="noopener">' + esc(n.title) + '</a>'
+        : esc(n.title)) + '</div>';
+    }).join('');
+  }
+
+  function vRanking() {
+    var b = S.randomBaseline || {};
+    var rows = S.ranked.map(function (r) {
+      var isBase = /RANDOM/i.test(r.name);
+      return '<tr class="' + (isBase ? 'baseline' : '') + '"><td>' + r.rank + '. ' + esc(r.name) + '</td>' +
+        '<td class="' + cls(r.all && r.all.avgR) + '">' + (r.all ? sign(r.all.avgR) : '—') + '</td>' +
+        '<td>' + (r.all && r.all.winRate != null ? r.all.winRate + '%' : '—') + '</td>' +
+        '<td class="' + cls(r.bigcap && r.bigcap.avgR) + '">' + (r.bigcap ? sign(r.bigcap.avgR, 2) : '—') + '</td>' +
+        '<td class="' + cls(r.midcap && r.midcap.avgR) + '">' + (r.midcap ? sign(r.midcap.avgR, 2) : '—') + '</td>' +
+        '<td>' + (r.all ? r.all.n : '—') + '</td></tr>';
+    }).join('');
+    return '<div class="card"><div class="kind">Baris <b>RANDOM</b> adalah garis batasnya — entry acak ' +
+      'menghasilkan ' + sign(b.bigcap, 3) + 'R di bigcap dan ' + sign(b.midcap, 3) + 'R di midcap.</div></div>' +
+      '<div class="card scroll"><table><thead><tr><th>strategi</th><th>avgR</th><th>WR</th>' +
+      '<th>big</th><th>mid</th><th>n</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function vToken() {
+    var t = token;
+    if (!t) return '<div class="empty">memuat…</div>';
+    if (t.error) return '<button class="back" id="back">← kembali</button><div class="err">' + esc(t.error) + '</div>';
+    return '<button class="back" id="back">← kembali</button>' +
+      '<div class="card"><div class="top"><span class="sym">' + esc(t.symbol) + '</span>' +
+      '<span class="pill ' + (t.rareTierEligible ? 'high' : 'medium') + '">' +
+      esc(t.capTier) + (t.rareTierEligible ? ' · rare ok' : '') + '</span></div>' +
+      sparkline(t.spark) +
+      '<div class="metrics"><div><div class="k">harga</div><div class="v">' + esc(t.last) + '</div></div>' +
+      '<div><div class="k">7 hari</div><div class="v ' + cls(t.change7d) + '">' + sign(t.change7d, 1) + '%</div></div>' +
+      '<div><div class="k">30 hari</div><div class="v ' + cls(t.change30d) + '">' + sign(t.change30d, 1) + '%</div></div></div>' +
+      (t.fundingRate != null ? '<div class="kind" style="margin-top:8px">funding ' +
+        (t.fundingRate * 100).toFixed(4) + '%</div>' : '') + '</div>' +
+      (t.stats ? '<div class="card"><div class="k">rare tier di ' + esc(t.capTier) + '</div>' +
+        '<div class="metrics"><div><div class="k">avg R</div><div class="v ' + cls(t.stats.avgR) + '">' +
+        sign(t.stats.avgR) + '</div></div><div><div class="k">WR</div><div class="v">' + t.stats.winRate +
+        '%</div></div><div><div class="k">n</div><div class="v">' + t.stats.n + '</div></div></div></div>' : '') +
+      '<div class="k" style="margin:14px 0 6px">RIWAYAT SINYAL</div>' +
+      (t.signals.length ? t.signals.map(signalCard).join('')
+        : '<div class="empty">Belum ada sinyal untuk token ini.</div>');
+  }
+
+  var VIEWS = {
+    summary: vSummary, regime: vRegime, flow: vFlow, signals: vSignals,
+    events: vEvents, news: vNews, ranking: vRanking, token: vToken
+  };
+
+  function tickCountdowns() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-cd]'), function (el) {
+      el.textContent = countdown(el.dataset.cd).text;
+    });
   }
 
   function render() {
-    if (!state) return;
-    ({ signals: renderSignals, ranking: renderRanking, regime: renderRegime })[view]();
+    if (!S) return;
+    root.innerHTML = (VIEWS[view] || vSummary)();
+    Array.prototype.forEach.call(document.querySelectorAll('[data-token]'), function (el) {
+      el.addEventListener('click', function () { openToken(el.dataset.token); });
+    });
+    var back = document.getElementById('back');
+    if (back) back.addEventListener('click', function () { view = 'signals'; token = null; render(); });
+    if (timer) clearInterval(timer);
+    if (document.querySelector('[data-cd]')) timer = setInterval(tickCountdowns, 1000);
   }
 
-  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (btn) {
+  function openToken(symbol) {
+    view = 'token'; token = null; render();
+    fetch('/api/token?symbol=' + encodeURIComponent(symbol), {
+      headers: { 'x-telegram-init-data': (tg && tg.initData) || '' }
+    }).then(function (r) { return r.json(); })
+      .then(function (d) { token = d; render(); })
+      .catch(function (e) { token = { error: e.message }; render(); });
+  }
+
+  var tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = TABS.map(function (t) {
+    return '<button class="tab" role="tab" data-view="' + t[0] + '" aria-selected="' +
+      (t[0] === view) + '">' + t[1] + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(tabsEl.querySelectorAll('.tab'), function (btn) {
     btn.addEventListener('click', function () {
-      view = btn.dataset.view;
-      Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+      view = btn.dataset.view; token = null;
+      Array.prototype.forEach.call(tabsEl.querySelectorAll('.tab'), function (b) {
         b.setAttribute('aria-selected', String(b === btn));
       });
       render();
     });
   });
 
-  fetch('/api/state?days=14', {
-    headers: { 'x-telegram-init-data': (tg && tg.initData) || '' }
-  })
+  fetch('/api/state?days=14', { headers: { 'x-telegram-init-data': (tg && tg.initData) || '' } })
     .then(function (r) {
       if (r.status === 401) throw new Error('Tidak diizinkan — buka lewat tombol di bot Telegram.');
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     })
-    .then(function (data) {
-      state = data;
-      var m = data.meta || {};
-      sub.textContent = (m.window || '') + (m.exit ? ' · ' + m.exit : '');
+    .then(function (d) {
+      S = d;
+      sub.textContent = (d.meta.window || '') + (d.meta.exit ? ' · ' + d.meta.exit : '');
       render();
     })
     .catch(function (e) {

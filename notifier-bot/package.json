@@ -31,7 +31,8 @@
     "scoreboard:regime": "node src/analysis/regimeScoreboard.js",
     "dashboard": "node src/dashboard/server.js",
     "structure:freq": "node src/analysis/structureFrequency.js",
-    "test:equilibrium": "node src/analysis/equilibriumTest.js"
+    "test:equilibrium": "node src/analysis/equilibriumTest.js",
+    "test:limit-entry": "node src/analysis/limitEntryTest.js"
   },
   "dependencies": {
     "playwright": "^1.62.0"

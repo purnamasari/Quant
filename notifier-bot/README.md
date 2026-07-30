@@ -83,6 +83,32 @@ Rejection Blocks and the PPDD liquidity-sweep OB variant from the
 original indicator were not ported (lower priority, more parameters to
 get right).
 
+## Telegram Mini App dashboard
+
+`npm run dashboard` (port 8787). Seven mobile-first tabs: Ringkasan, Regime,
+Money flow, Sinyal (tap a card for a per-token page), Events with live
+countdowns, News, Ranking.
+
+Two things it shows that the Telegram messages cannot:
+
+- **Regime for both markets** — crypto from BTC and stocks from SPY, through
+  the *same* 200SMA classifier, so the two readings mean the same thing and can
+  sit side by side.
+- **Silent signals** — everything below HIGH conviction, dimmed, with the reason
+  it was demoted. That is what lets you tell a detector gap apart from a
+  notification-policy decision later.
+
+Money flow is a labelled proxy, not order flow: volume weighted by candle
+direction over 7 days versus the prior 7, plus perp funding. It is **not
+validated as predictive** and the UI says so — the public endpoints this bot
+uses cannot see real exchange netflow.
+
+Auth defaults ON. `initData` is verified by HMAC-SHA256 against the bot token,
+constant-time compared, age-limited, and checked against `TELEGRAM_CHAT_ID` —
+a valid signature only proves "a real Telegram user", not "the owner". Set
+`DASHBOARD_REQUIRE_AUTH=false` for local development only. Serving this
+publicly needs HTTPS and the URL registered with BotFather as a Mini App.
+
 ## Stock alerts are off
 
 `alertStockKinds` defaults to empty, and `job.js` returns before the universe

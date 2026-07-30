@@ -21,7 +21,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const config = require('../config');
-const { recentSignals } = require('../signalStore');
+const { fullState, tokenDetail } = require('./state');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
@@ -98,45 +98,7 @@ function json(res, status, body) {
   res.end(payload);
 }
 
-// ── API payload ─────────────────────────────────────────────────────────────
-function buildState({ days = 14 } = {}) {
-  const stats = readJson('strategy-stats.json', { _meta: {}, strategies: {} });
-  const regimeTable = readJson('regime-adjustments.json', { episodes: {}, strategies: {} });
-  const signals = recentSignals({ days });
-
-  const ranked = Object.entries(stats.strategies || {})
-    .map(([name, row]) => ({
-      name,
-      rank: row.rank,
-      of: row.of,
-      all: row.all,
-      bigcap: row.bigcap,
-      midcap: row.midcap,
-      beatsRandom: row.beatsRandom,
-    }))
-    .sort((a, b) => a.rank - b.rank);
-
-  const notified = signals.filter((s) => s.notified);
-  const silent = signals.filter((s) => !s.notified);
-
-  return {
-    generatedAt: new Date().toISOString(),
-    meta: stats._meta || {},
-    randomBaseline: stats._meta?.randomBaseline || null,
-    regime: signals.length ? signals[signals.length - 1].regime : null,
-    counts: {
-      total: signals.length,
-      notified: notified.length,
-      silent: silent.length,
-      days,
-    },
-    signals: signals.slice().reverse(),
-    ranked,
-    regimeEpisodes: regimeTable.episodes || {},
-  };
-}
-
-function handleApi(req, res, url) {
+async function handleApi(req, res, url) {
   if (REQUIRE_AUTH) {
     const initData = req.headers['x-telegram-init-data'];
     const check = verifyInitData(initData, config.telegramBotToken);
@@ -147,8 +109,19 @@ function handleApi(req, res, url) {
       return json(res, 401, { error: 'unauthorized' });
     }
   }
-  const days = Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 14));
-  return json(res, 200, buildState({ days }));
+  try {
+    if (url.pathname === '/api/token') {
+      const symbol = url.searchParams.get('symbol') || '';
+      return json(res, 200, await tokenDetail(symbol));
+    }
+    const days = Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 14));
+    return json(res, 200, await fullState({ days }));
+  } catch (err) {
+    // A section failing must return a readable error, not a hung request —
+    // the page has no other way to tell "still loading" from "broken".
+    console.error('[dashboard] state failed:', err.message);
+    return json(res, 500, { error: 'state unavailable' });
+  }
 }
 
 const CONTENT_TYPES = {
@@ -174,7 +147,7 @@ function serveStatic(res, name) {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  if (url.pathname === '/api/state') return handleApi(req, res, url);
+  if (url.pathname.startsWith('/api/')) return handleApi(req, res, url);
   if (url.pathname === '/healthz') return json(res, 200, { ok: true });
   if (url.pathname === '/' || url.pathname === '/index.html') return serveStatic(res, 'index.html');
   return serveStatic(res, url.pathname.replace(/^\/+/, ''));
@@ -191,4 +164,4 @@ function start() {
 
 if (require.main === module) start();
 
-module.exports = { start, buildState, verifyInitData, server };
+module.exports = { start, verifyInitData, server };

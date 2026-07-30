@@ -879,3 +879,49 @@ the port is sound.
 - `anticipatory.py` (limit-at-POI) — worth revisiting alongside the cost work in
   data/profitability-plan.md, since a resting limit is exactly how the 0.25%
   round-trip assumption gets cut.
+
+## Limit-at-POI entry (cost reduction attempt) — tested, REJECTED
+
+Item 2 of data/profitability-plan.md was cutting the 0.25% round-trip cost
+assumption, and market-pulse's `anticipatory.py` was the pointer: rest a limit
+below the market instead of taking it. With a 14-day hold, being filled ten
+minutes later ought to cost nothing.
+
+Grading follows anticipatory.py's model, which gets the crucial part right:
+**never-filled is a third outcome carrying no R**. So the comparison is expected
+R *per signal* (fillRate x avgR among fills), never avgR among fills alone —
+comparing fill-only averages against a market entry that always fills is how a
+limit strategy flatters itself.
+
+RARE tier, limit resting up to 3 bars, offsets in ATR so depth means the same
+thing across pairs:
+
+| variant | fill % | n | WR | avgR (filled) | **avgR / signal** |
+|---|---|---|---|---|---|
+| **MARKET @ close (taker/taker, 0.25%)** | 100% | 102 | 64.7% | 0.911 | **0.911** |
+| limit -0.15 ATR (maker/maker, 0.05%) | 79% | 81 | 56.8% | 0.690 | 0.548 |
+| limit -0.3 ATR (maker/maker) | 63% | 64 | 54.7% | 0.654 | 0.410 |
+| limit -0.5 ATR (maker/maker) | 52% | 53 | 52.8% | 0.601 | 0.312 |
+
+Same shape on bigcap generally (0.294 market vs 0.228 best limit). On midcap the
+best limit beat market by +0.006R, which is noise.
+
+**The cost saving is real and far too small.** Dropping 0.25% to 0.05% is worth
+roughly 0.02R at these stop widths. The shallowest limit tested, just 0.15 ATR
+below the close, already gives up 0.36R per signal on the rare tier — and it
+loses twice over: 21% of signals never fill, and the ones that do fill average
+0.690R instead of 0.911R.
+
+That second number is the whole story. The trades that come back to you are the
+ones that stalled. This is the third time this exact adverse selection has
+appeared here — the hourly pullback entry, the discount-location filter, and now
+a resting limit — and it is the same mechanism every time: these are breakout
+signals, so any rule that waits for a better price is a rule that filters out
+the breakouts that worked.
+
+**Not implemented.** Worth separating two things the test does not conflate,
+though: this rejects resting a limit BELOW the market. It says nothing about
+using a marketable limit AT the signal close to capture part of the maker/taker
+spread without fill risk — that cannot be measured from daily candles and needs
+live fill data, so it stays open as an execution question rather than a
+strategy one.
