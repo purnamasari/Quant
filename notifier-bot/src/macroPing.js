@@ -101,19 +101,23 @@ async function runMacroPing() {
     sent += 1;
   }
 
+  // Results are pooled exactly like the H-1 pings above, and for the same
+  // reason. Nasdaq reports one release as many rows: 2026-07-30 sent ELEVEN
+  // separate messages for what was really three releases — five PCE rows
+  // ("Core PCE Price Index" appearing twice with different m/m and y/y
+  // figures, plus "PCE price index" and "PCE Price index" differing only in
+  // capitalisation), three GDP rows and three jobless-claims rows.
+  //
+  // Grouping on the impact category collapses those to one message per
+  // release, which also fixes the casing bug for free: both PCE spellings
+  // resolve to the same category, so they can no longer occupy separate dedup
+  // keys. Sorting by time keeps the pooled batch in release order.
+  const resultGroups = new Map();
   for (const event of events) {
-    const key = `${date}|${event.time}|${event.name}`;
     const eventTime = eventDateTime(date, event.time);
     if (!eventTime) continue;
-    const minutesUntil = (eventTime.getTime() - now.getTime()) / 60000;
+    const minutesSince = (now.getTime() - eventTime.getTime()) / 60000;
 
-    // Result announcement: closes the loop the H-1 ping opens. That ping lists
-    // both branches; this says which one actually happened. Gated on `actual`
-    // being populated rather than on the clock, since releases can be late and
-    // an empty figure would otherwise be announced as news.
-    const resultKey = `result|${key}`;
-    if (state[resultKey]) continue;
-    const minutesSince = -minutesUntil;
     // Nasdaq populates `actual` BEFORE the release moment for some rows — CB
     // Consumer Confidence carried 90.8 two and a half hours ahead of its
     // 10:00 ET slot, with `previous` at 92.2, so it was not merely echoing the
@@ -123,29 +127,57 @@ async function runMacroPing() {
     if (minutesSince < RESULT_SETTLE_MINUTES || minutesSince > RESULT_WINDOW_MINUTES) continue;
     if (!event.actual) continue; // not released yet, or Nasdaq hasn't filled it in
 
-    const actualNum = parseValue(event.actual);
-    const consensusNum = parseValue(event.consensus);
-    let direction = null;
-    if (actualNum !== null && consensusNum !== null) {
-      if (Math.abs(actualNum - consensusNum) < INLINE_EPSILON) direction = 'inline';
-      else direction = actualNum > consensusNum ? 'higher' : 'lower';
+    const impact = findImpact(event.name);
+    const groupKey = `result|${date}|${event.time}|${impact ? impact.label : event.name.toLowerCase()}`;
+    if (!resultGroups.has(groupKey)) {
+      resultGroups.set(groupKey, { time: event.time, impact, events: [], eventTime });
     }
+    resultGroups.get(groupKey).events.push(event);
+  }
+
+  for (const [groupKey, group] of [...resultGroups].sort((a, b) => a[1].eventTime - b[1].eventTime)) {
+    if (state[groupKey]) continue;
+
+    // Direction is decided by the headline figure — the first row that has both
+    // an actual and a consensus. The others are printed as supporting lines
+    // rather than each asserting their own market reaction, because one release
+    // cannot imply three different things at once.
+    const scored = group.events.map((event) => {
+      const actualNum = parseValue(event.actual);
+      const consensusNum = parseValue(event.consensus);
+      let direction = null;
+      if (actualNum !== null && consensusNum !== null) {
+        direction = Math.abs(actualNum - consensusNum) < INLINE_EPSILON
+          ? 'inline'
+          : (actualNum > consensusNum ? 'higher' : 'lower');
+      }
+      return { event, direction };
+    });
+    const headline = scored.find((s) => s.direction) || scored[0];
+    const direction = headline.direction;
 
     const emoji = direction === 'higher' ? '🔺' : direction === 'lower' ? '🔻' : '➖';
+    const title = group.impact ? group.impact.label : headline.event.name;
     const lines = [
-      `${emoji} <b>Hasil rilis:</b> ${event.name}`,
-      `Aktual <b>${event.actual}</b>` +
-        (event.consensus ? ` vs konsensus ${event.consensus}` : '') +
-        (event.previous ? ` (sebelumnya ${event.previous})` : ''),
+      `${emoji} <b>Hasil rilis:</b> ${title} — ${withEtAndWib(group.time, date)}`,
     ];
-    // No consensus published means there is no beat/miss to reason about —
-    // report the number and stop rather than invent a direction.
-    const outcomeBlock = direction ? formatOutcomeBlock(event.name, direction) : null;
+    for (const { event, direction: d } of scored) {
+      const mark = d === 'higher' ? '🔺' : d === 'lower' ? '🔻' : d === 'inline' ? '➖' : '·';
+      lines.push(
+        `${mark} ${event.name}: <b>${event.actual}</b>` +
+        (event.consensus ? ` vs kons. ${event.consensus}` : '') +
+        (event.previous ? ` (seb. ${event.previous})` : ''),
+      );
+    }
+
+    // No consensus anywhere in the group means there is no beat/miss to reason
+    // about — report the numbers and stop rather than invent a direction.
+    const outcomeBlock = direction ? formatOutcomeBlock(headline.event.name, direction) : null;
     if (outcomeBlock) lines.push('', outcomeBlock);
-    else if (!direction) lines.push('', '<i>Tidak ada konsensus untuk dibandingkan — angkanya saja.</i>');
+    else lines.push('', '<i>Tidak ada konsensus untuk dibandingkan — angkanya saja.</i>');
 
     await sendMessage(lines.join('\n'));
-    state[resultKey] = true;
+    state[groupKey] = true;
     results += 1;
   }
   saveState(state);

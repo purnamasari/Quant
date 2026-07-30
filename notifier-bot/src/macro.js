@@ -33,10 +33,20 @@ function cleanValue(raw) {
 // Suffixes are scale markers, not part of the number, and every value for a
 // given event shares the same unit — so comparing actual against consensus
 // only needs the numeric part, with the suffix left for display.
+// Thousands separators must be stripped BEFORE the number is matched. Without
+// it the regex stops at the first comma, so "1,782K" parsed as 1 and "1,800K"
+// also parsed as 1 — they compared equal and a clear miss on Continuing Jobless
+// Claims was announced as "in line with consensus". Every release quoted with
+// separators (claims, payrolls) was affected, and it fails silently: the
+// message looks perfectly well-formed while asserting the wrong direction.
+//
+// Safe for this feed specifically: Nasdaq's US calendar uses comma for
+// thousands and period for decimals. A source using comma as the decimal mark
+// would need different handling.
 function parseValue(raw) {
   const text = cleanValue(raw);
   if (text === null) return null;
-  const match = text.match(/-?\d+(?:\.\d+)?/);
+  const match = text.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
   if (!match) return null;
   const n = Number(match[0]);
   return Number.isFinite(n) ? n : null;
@@ -55,19 +65,110 @@ function tomorrowYmd() {
 // loudly if it persists.
 const CALENDAR_ATTEMPTS = 3;
 
+// Nasdaq's answer for a given date is not stable. 2026-07-30 returned
+// `data: null` all morning while 07-29 and 07-31 answered normally, and the
+// day's real slate (GDP, Core PCE, jobless claims) only appeared hours later.
+// The H-1 ping therefore never fired for any of it: at ping time the calendar
+// genuinely looked empty.
+//
+// So every good fetch is written to data/macro-cache/, and a fetch that comes
+// back empty falls back to the last known copy for that date rather than
+// concluding nothing is scheduled. A stale copy is a far better basis for a
+// warning than silence — the times and consensus figures are set days ahead,
+// and only `actual` needs the live feed.
+const CACHE_DIR = path.join(__dirname, '..', 'data', 'macro-cache');
+
+function cacheFile(dateYmd) {
+  return path.join(CACHE_DIR, `${dateYmd}.json`);
+}
+
+function readCachedRows(dateYmd) {
+  try {
+    const rows = JSON.parse(fs.readFileSync(cacheFile(dateYmd), 'utf8'));
+    return Array.isArray(rows) && rows.length ? rows : null;
+  } catch {
+    return null;
+  }
+}
+
+// How much a snapshot is worth keeping. Needed because the feed does not just
+// go empty — on 2026-07-30 it served THREE different days for the same date
+// within six hours: `data: null` in the morning, the correct Thursday slate
+// (GDP, Core PCE, jobless claims) around 14:00 UTC, then Wednesday's content
+// (mortgage applications, crude inventories, the 28-29 FOMC rows) at 16:00.
+//
+// A cache that overwrites on every successful fetch therefore destroys the good
+// copy as soon as the feed wobbles — which is exactly what happened the first
+// time this ran. Score by the major US rows a snapshot carries, weighting rows
+// whose `actual` is filled in, and refuse any write that scores lower than what
+// is already stored. A later fetch of the same date can add figures; it cannot
+// take the day's slate away.
+function snapshotScore(rows) {
+  let score = 0;
+  for (const r of rows) {
+    if (r.country !== 'United States' || !isMajor(r.eventName || '')) continue;
+    score += 1;
+    if (cleanValue(r.actual) !== null) score += 2;
+  }
+  return score;
+}
+
+function writeCachedRows(dateYmd, rows) {
+  try {
+    const incoming = snapshotScore(rows);
+    const existing = readCachedRows(dateYmd);
+    if (existing) {
+      const current = snapshotScore(existing);
+      if (incoming < current) {
+        console.warn(`[macro] keeping cached ${dateYmd} (score ${current}) — ` +
+          `live copy scored only ${incoming}, which means the feed is serving a thinner ` +
+          'or different day for this date');
+        return;
+      }
+    }
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+    fs.writeFileSync(cacheFile(dateYmd), JSON.stringify(rows));
+  } catch (err) {
+    console.warn(`[macro] could not cache ${dateYmd}: ${err.message}`);
+  }
+}
+
 async function fetchCalendarRows(dateYmd) {
   const url = `https://api.nasdaq.com/api/calendar/economicevents?date=${dateYmd}`;
   for (let attempt = 1; attempt <= CALENDAR_ATTEMPTS; attempt++) {
     const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     if (res.ok) {
       const json = await res.json();
-      if (json?.data?.rows) return json.data.rows;
-      // data:null — throttled or truly empty; we cannot tell them apart, so retry.
+      if (json?.data?.rows) {
+        writeCachedRows(dateYmd, json.data.rows);
+        // The live answer is not automatically the best answer. When the feed
+        // serves a thinner or different day for this date, the richer cached
+        // snapshot is what the alerts should run on — otherwise a mid-day
+        // wobble silently erases the day's real slate from every downstream
+        // consumer, not just from the cache file.
+        const cachedNow = readCachedRows(dateYmd);
+        if (cachedNow && snapshotScore(cachedNow) > snapshotScore(json.data.rows)) {
+          console.warn(`[macro] live copy for ${dateYmd} is thinner than the cached one — using cache`);
+          return cachedNow;
+        }
+        return json.data.rows;
+      }
+      // data:null — throttled, or a transient hole like 2026-07-30. Either way
+      // it is not evidence that the day is empty; retry, then fall back.
     }
     if (attempt < CALENDAR_ATTEMPTS) await new Promise((r) => setTimeout(r, 1200 * attempt));
   }
+
+  const cached = readCachedRows(dateYmd);
+  if (cached) {
+    console.warn(`[macro] live calendar empty for ${dateYmd} after ${CALENDAR_ATTEMPTS} attempts ` +
+      `— using ${cached.length} cached row(s). Scheduled times and consensus are reliable; ` +
+      "'actual' may lag until the feed recovers.");
+    return cached;
+  }
+
   console.warn(`[macro] calendar unavailable for ${dateYmd} after ${CALENDAR_ATTEMPTS} attempts ` +
-    '(Nasdaq returned no rows) — falling back to the local FOMC calendar only');
+    'and no cached copy exists — falling back to the local FOMC calendar only');
   return null;
 }
 
@@ -177,4 +278,10 @@ async function getTomorrowMacroEvents() {
   return getMacroEventsForDate(tomorrowYmd());
 }
 
-module.exports = { getMacroEventsForDate, getTomorrowMacroEvents, tomorrowYmd, parseValue, cleanValue };
+// snapshotScore and writeCachedRows are exported for testing: the cache
+// downgrade guard is the part most likely to be broken by a future edit, and
+// it fails silently (a poisoned cache looks exactly like a quiet day).
+module.exports = {
+  getMacroEventsForDate, getTomorrowMacroEvents, tomorrowYmd, parseValue, cleanValue,
+  snapshotScore, writeCachedRows, readCachedRows,
+};
