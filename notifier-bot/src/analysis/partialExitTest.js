@@ -27,7 +27,7 @@
 // Intrabar ordering is conservative throughout: when a bar spans both the stop
 // and a profit level, the stop is assumed to hit first.
 
-const { getCandles } = require('../crypto/okx');
+const { getCandles } = require('../crypto/binance');
 const { detectFVG } = require('../smc');
 
 const H4_SECONDS = 4 * 3600;

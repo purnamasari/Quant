@@ -19,7 +19,7 @@
 // most — a comparison against random entries over the same pairs and period,
 // since a rising market makes almost any long look profitable.
 
-const { getDailyCandles } = require('../crypto/okx');
+const { getDailyCandles } = require('../crypto/binance');
 const { atr } = require('../risk');
 const { DEFAULT_VALIDATION_UNIVERSE } = require('../crypto/universe');
 

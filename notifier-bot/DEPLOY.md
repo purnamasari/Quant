@@ -10,25 +10,24 @@ A Telegram bot that scans stocks and crypto for a small set of
 backtest-validated signals and pushes alerts, plus a Telegram Mini App
 dashboard. It is stateless apart from a handful of local JSON files (dedup
 state, alert history, macro-calendar cache) — no database, no external
-services beyond the public APIs it calls (OKX, Yahoo Finance, Nasdaq's
+services beyond the public APIs it calls (Binance, Yahoo Finance, Nasdaq's
 calendar, Google News RSS).
 
 ## 1. Requirements
 
 - Node.js 18+ (built and tested on Node 22)
 - ~250MB disk (Chromium for chart rendering is the bulk of it)
-- Outbound HTTPS to: `okx.com`, `query1.finance.yahoo.com` /
+- Outbound HTTPS to: `fapi.binance.com`, `query1.finance.yahoo.com` /
   `query2.finance.yahoo.com`, `api.nasdaq.com`, `news.google.com`,
   `api.telegram.org`
 - A Telegram bot token (from [@BotFather](https://t.me/BotFather)) and the
   chat ID that should receive alerts
 
-**Binance is unreachable from some environments** (geo-blocked with HTTP 451
-in the container this was built in). The bot uses OKX for crypto data
-instead and does not depend on Binance at all — this is not a concern unless
-you deliberately changed something. If OKX itself returns errors from your
-VPS, that is a genuine outage, not a geo-block; see `src/crypto/okx.js` for
-the retry logic already in place.
+**Crypto data comes from the Binance USDⓈ-M futures public API**
+(`fapi.binance.com`, public endpoints only — no API key needed); see
+`src/crypto/binance.js`. Binance geo-blocks some jurisdictions with HTTP 451,
+so check your VPS can reach `fapi.binance.com` before deploying. Transient
+5xx/network errors are already retried inside that client.
 
 ## 2. Clone and install
 
@@ -153,10 +152,10 @@ npm run scoreboard          # data/strategy-stats.json — per-strategy expectan
 npm run scoreboard:regime   # data/regime-adjustments.json — regime-based conviction adjustments
 ```
 
-Both read from `data/export/` (cached OKX candles, committed to the repo)
+Both read from `data/export/` (cached candles, committed to the repo)
 and need no network access to run. Re-run `node src/analysis/exportSignals.js`
 first if you want them computed against fresher candles — that one does hit
-OKX.
+Binance.
 
 ## 8. The Mini App dashboard (optional)
 

@@ -9,7 +9,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { getDailyCandles } = require('../crypto/okx');
+const { getDailyCandles } = require('../crypto/binance');
 const { walkForwardOccurrences } = require('../stock/backtest');
 const { atr } = require('../risk');
 const { DEFAULT_VALIDATION_UNIVERSE } = require('../crypto/universe');

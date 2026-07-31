@@ -22,7 +22,7 @@
 // against entry before they work. That distribution is what determines which
 // leverage levels rob you of trades that would otherwise have won.
 
-const { getDailyCandles } = require('../crypto/okx');
+const { getDailyCandles } = require('../crypto/binance');
 const { walkForwardOccurrences } = require('../stock/backtest');
 const { atr } = require('../risk');
 const { DEFAULT_VALIDATION_UNIVERSE } = require('../crypto/universe');

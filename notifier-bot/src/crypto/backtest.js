@@ -9,7 +9,7 @@
 // untested heuristic until someone runs that analysis.
 
 const { walkForwardOccurrences, forwardReturn, summarize } = require('../stock/backtest');
-const { getDailyCandles } = require('./okx');
+const { getDailyCandles } = require('./binance');
 const { getUniverse } = require('./universe');
 
 async function runCryptoBacktest({ days = 730, holdDays = 2, symbols = null, log = console.log, costPercent = 0 } = {}) {

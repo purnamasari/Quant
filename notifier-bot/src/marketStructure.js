@@ -26,11 +26,11 @@
 // the standard HTF-bias / LTF-confirmation framing.
 
 const { detectBoS } = require('./smc');
-const { getCandles } = require('./crypto/okx');
+const { getCandles } = require('./crypto/binance');
 
 const DAILY_LOOKBACK = 5;
 const FOUR_HOUR_LOOKBACK = 8;
-const BENCHMARK = 'BTC-USDT';
+const BENCHMARK = 'BTCUSDT';
 
 // How far back to look for the most recent break when establishing the
 // standing bias. Beyond this the structure is treated as unknown rather than

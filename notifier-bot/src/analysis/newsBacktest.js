@@ -25,7 +25,7 @@
 // binds often, "volume" is really "at least this much" and the z-score
 // understates the true spread.
 
-const { getDailyCandles } = require('../crypto/okx');
+const { getDailyCandles } = require('../crypto/binance');
 const { walkForwardOccurrences } = require('../stock/backtest');
 const { atr } = require('../risk');
 const { getWindow, dailyCounts, cacheStats, ymd, ITEM_CAP } = require('../newsStore');

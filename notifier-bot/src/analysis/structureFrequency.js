@@ -14,7 +14,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { detectBoS } = require('../smc');
-const { getCandles } = require('../crypto/okx');
+const { getCandles } = require('../crypto/binance');
 
 const CACHE = path.join(__dirname, '..', '..', 'data', 'export-structure');
 const LOOKBACKS = [1, 2, 3, 5, 8];

@@ -27,7 +27,7 @@
 //     entry or once HOLD_5M_BARS worth of time has passed since it formed
 //     without ever being touched (stale, dropped).
 
-const { getCandles } = require('../crypto/okx');
+const { getCandles } = require('../crypto/binance');
 const { detectOB, detectFVG, detectBoS } = require('../smc');
 
 const H4_SECONDS = 4 * 3600;

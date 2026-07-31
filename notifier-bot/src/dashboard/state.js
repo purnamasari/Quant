@@ -9,7 +9,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { recentSignals } = require('../signalStore');
-const { getDailyCandles, getFundingRate } = require('../crypto/okx');
+const { getDailyCandles, getFundingRate } = require('../crypto/binance');
 const { getChart } = require('../stock/yahoo');
 const { classifyLatest, REGIME_LABEL } = require('../regime');
 const { marketStructure } = require('../marketStructure');
@@ -48,9 +48,9 @@ async function regimes() {
   const out = { crypto: null, stock: null };
 
   try {
-    const btc = await getDailyCandles('BTC-USDT', 300);
+    const btc = await getDailyCandles('BTCUSDT', 300);
     out.crypto = {
-      symbol: 'BTC-USDT',
+      symbol: 'BTCUSDT',
       regime: classifyLatest(btc),
       label: REGIME_LABEL[classifyLatest(btc)] || 'UNKNOWN',
       last: btc[btc.length - 1].close,

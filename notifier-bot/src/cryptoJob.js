@@ -24,7 +24,7 @@
 const config = require('./config');
 const { sendMessage } = require('./telegram');
 const cryptoUniverse = require('./crypto/universe');
-const { getDailyCandles, getFundingRate } = require('./crypto/okx');
+const { getDailyCandles, getFundingRate } = require('./crypto/binance');
 const { detectCryptoSignals } = require('./crypto/signals');
 const { riskPlanFor } = require('./risk');
 const { formatCryptoAlert, formatStructureAlert } = require('./format');
@@ -98,7 +98,7 @@ async function scanCrypto() {
   // scan; a null regime simply means no regime adjustment is applied.
   let regime = null;
   try {
-    const btc = await getDailyCandles('BTC-USDT', 300);
+    const btc = await getDailyCandles('BTCUSDT', 300);
     regime = classifyLatest(btc);
     console.log(`[cryptoJob] market regime: ${regime ?? 'unknown'}`);
   } catch (err) {
@@ -131,7 +131,7 @@ async function scanCrypto() {
       const rareTierEligible = cryptoUniverse.RARE_TIER_UNIVERSE.includes(symbol) && confluenceCount >= 2;
 
       const plan = riskPlanFor(candles);
-      const coinName = symbol.split('-')[0];
+      const coinName = symbol.replace(/-USDT-SWAP$/, '').replace(/-USDT$/, '').replace(/USDT$/, '');
       const news = await getCryptoNews(`${coinName} crypto`, 2);
       for (const signal of matched) {
         const rareTier = signal.kind === 'cup-forming' && rareTierEligible;
@@ -241,7 +241,7 @@ async function main() {
         `⚠️ <b>Crypto scan gagal total</b> — ${scanned}/${scanned} pair tidak bisa diambil datanya, ` +
         `padahal tiap request sudah di-retry 3x.\n\n` +
         `Error: <code>${reason}</code>\n\n` +
-        `Penyebab tersering bukan OKX-nya, tapi kegagalan DNS/jaringan di sisi server ` +
+        `Penyebab tersering bukan Binance-nya, tapi kegagalan DNS/jaringan di sisi server ` +
         `(503 dengan body "DNS resolution failure" pernah terjadi 2x dalam sehari dan pulih sendiri ` +
         `dalam beberapa menit). Karena retry pun gagal, ini lebih lama dari biasanya — ` +
         `cek konektivitas server kalau berlanjut.`,

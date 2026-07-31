@@ -30,7 +30,7 @@
 //   - 'fvg'  : stop just below the 5m FVG's own bottom (tight, standard SMC)
 //   - 'zone' : stop below the 4H FVG's bottom (wide, invalidates the thesis)
 
-const { getCandles } = require('../crypto/okx');
+const { getCandles } = require('../crypto/binance');
 const { detectFVG } = require('../smc');
 
 const H4_SECONDS = 4 * 3600;

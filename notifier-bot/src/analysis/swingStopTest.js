@@ -19,7 +19,7 @@
 // Pivot detection is ported from src/renderer/components/chart/analysis.ts
 // (isPivotAt / findPivots) in the parent repo.
 
-const { getDailyCandles } = require('../crypto/okx');
+const { getDailyCandles } = require('../crypto/binance');
 const { walkForwardOccurrences } = require('../stock/backtest');
 const { atr } = require('../risk');
 

@@ -16,7 +16,7 @@
 // Hold: 192 15m-bars (~2 days) from the actual entry, matching the
 // 2-day hold everything else in this bot uses.
 
-const { getCandles } = require('../crypto/okx');
+const { getCandles } = require('../crypto/binance');
 const { walkForwardOccurrences } = require('../stock/backtest');
 const { getUniverse } = require('../crypto/universe');
 const { ema } = require('../stock/signals');

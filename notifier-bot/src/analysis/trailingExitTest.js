@@ -25,7 +25,7 @@
 // the ORIGINAL ATR*1.5 stop distance, keeping it comparable to the 0.38-0.50R
 // benchmark in data/crypto-signal-validation.md.
 
-const { getDailyCandles } = require('../crypto/okx');
+const { getDailyCandles } = require('../crypto/binance');
 const { walkForwardOccurrences } = require('../stock/backtest');
 const { atr } = require('../risk');
 const { DEFAULT_VALIDATION_UNIVERSE, RARE_TIER_UNIVERSE } = require('../crypto/universe');

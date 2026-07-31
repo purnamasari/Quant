@@ -35,7 +35,7 @@
 // profitable. See data/crypto-signal-validation.md for the full write-up and
 // why survivorship bias is the most likely explanation.
 
-const { getDailyCandles } = require('../crypto/okx');
+const { getDailyCandles } = require('../crypto/binance');
 const { DEFAULT_VALIDATION_UNIVERSE } = require('../crypto/universe');
 
 const ROUND_TRIP_COST_PERCENT = 0.5; // 0.25% per leg, two legs

@@ -148,7 +148,7 @@ function formatCryptoAlert({
     ...positionLines(position),
     ...newsLines(news),
     '',
-    '<i>Harga via OKX — cek di venue kamu sebelum entry.</i>',
+    '<i>Harga via Binance — cek di venue kamu sebelum entry.</i>',
   ];
   return lines.filter((l) => l !== null).join('\n');
 }

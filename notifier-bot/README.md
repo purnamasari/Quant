@@ -206,7 +206,7 @@ up with a once-a-day check at 21:30 UTC (that timing was chosen for when
 the US stock market closes, which has nothing to do with crypto). Two
 statuses:
 - **PROVISIONAL** — seen while today's candle is still forming
-  (`confirmed: false` from OKX, see `src/crypto/okx.js`). Can still
+  (`confirmed: false`, see `src/crypto/binance.js`). Can still
   change or disappear before the actual close. Purely a heads-up, not
   validated behavior — the backtest never evaluated partial candles.
 - **CONFIRMED** — seen after the candle has closed. This is the signal
@@ -273,8 +273,8 @@ you that — it would need an actual always-on server with a webhook.
 - `src/stock/` — Yahoo Finance chart + earnings fetch, ported signal
   detection (`src/shared/signals.ts` from the main Quant repo), aggregate
   universe backtest.
-- `src/crypto/` — OKX kline + funding-rate fetch (see note below on why
-  OKX, not Binance), same signal detection reused, its own backtest.
+- `src/crypto/` — Binance USDⓈ-M futures kline + funding-rate fetch, same
+  signal detection reused, its own backtest.
 - `src/analysis/correlateSignals.js` — Jaccard co-occurrence check between
   the 11 stock signal kinds, to catch redundant/cherry-picked signals
   (see `data/stock-signal-validation.md`).
@@ -305,7 +305,7 @@ you that — it would need an actual always-on server with a webhook.
   leverage, notional, and margin (see "Leverage" below).
 - `src/analysis/leverageRisk.js` — replays every historical setup at 1x-100x
   to measure where leverage starts destroying the edge.
-- `src/analysis/fundingCost.js` — real OKX funding history expressed in R
+- `src/analysis/fundingCost.js` — real funding history expressed in R
   units, i.e. what a 7-day leveraged hold actually costs.
 - `data/stock-signal-validation.md`, `data/crypto-signal-validation.md` —
   the actual backtest + correlation numbers behind the default alert
@@ -350,7 +350,7 @@ stop width varies by pair, so does the resulting cap: BTC ~12x (3.9% stop),
 most altcoins ~4-5x (8-13% stops). Hard-capped at 15x regardless.
 
 Alerts also project the 7-day funding bill in R and warn past 0.15R. Measured
-funding on OKX has been negligible (<0.04R) but that endpoint only retains
+funding has been negligible (<0.04R) but that endpoint only retains
 ~92 days, which excludes the euphoric phases when funding actually bites — at
 0.1%/8h the bill reaches 0.54R and exceeds the entire edge.
 
@@ -359,18 +359,16 @@ Full reasoning, worked examples, and circuit breakers:
 
 ## Important limitations — read before relying on this
 
-1. **Binance was unreachable from the build environment.** Both
-   `api.binance.com` and `fapi.binance.com` returned HTTP 451
-   ("restricted location"); Bybit returned a CloudFront 403. OKX and
-   Kraken/Coinbase were reachable, so crypto data comes from OKX. A VPS in a
-   permitted jurisdiction may well reach Binance — worth trying, since that
-   is the actual trading venue and OKX/Binance daily closes were observed to
-   differ by 0.01%-1.24% (different candle-close conventions), enough to
-   shift a signal by a day. Swapping `src/crypto/okx.js` for a Binance client
-   needs no changes above it, but **re-run the crypto backtests afterwards**
-   — different candle boundaries mean the validation numbers do not transfer
-   automatically. Do not try to circumvent a geographic block; if the VPS
-   cannot reach it legitimately, stay on OKX.
+1. **The crypto validation numbers were measured on OKX candles.** Crypto
+   data now comes from Binance USDⓈ-M futures (`src/crypto/binance.js`),
+   which is the actual trading venue; the earlier OKX substitution existed
+   only because Binance returned HTTP 451 from the build environment, which
+   it no longer does. OKX/Binance daily closes were observed to differ by
+   0.01%-1.24% (different candle-close conventions), enough to shift a
+   signal by a day, so **the crypto backtests need re-running against
+   Binance candles** — the numbers in `data/crypto-signal-validation.md` do
+   not transfer automatically. Binance geo-blocks some jurisdictions; do not
+   try to circumvent that, deploy somewhere it is reachable legitimately.
 2. **Stock universe is small** (~90 large-cap US stocks/ETFs bundled in
    `data/symbol-directory.json`, copied from the Quant desktop app) — not
    the full US market. Set `STOCK_WATCHLIST` in `.env` to scan specific
@@ -444,7 +442,7 @@ Notes that will save you an evening:
   `12/12 pairs scanned OK`, and if *every* pair fails to fetch it treats that
   as a data outage rather than a quiet market: exits non-zero and sends one
   Telegram notice per day (deduped, so an hours-long outage doesn't spam).
-  This was added after a real OKX rate-limit episode produced twelve failures
+  This was added after a real exchange rate-limit episode produced twelve failures
   that printed the same `0 new alert(s)` summary as a healthy run.
 
 Still worth adding: a healthcheck on `cron.log` or the exit codes. The bot
