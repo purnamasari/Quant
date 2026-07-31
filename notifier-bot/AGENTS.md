@@ -161,12 +161,17 @@ rare tier's spectacular sideways cell (+2.11R, 92.5% WR) is **refused** by guard
   "different from zero" on a decade of rising US equities. `job.js` still sends
   the daily reminder; it just no longer scans. Full numbers and how to re-enable:
   `data/stock-signal-validation.md`, last section.
-- **Crypto** (`alertCryptoKinds`): ma-alignment, near-52w-high, volume-surge.
-  cup-forming and bos-bullish were dropped on 2026-07-31 after the
-  OKX→Binance re-validation (cup-forming -0.24% pooled, 0 occurrences in the
-  last 365 days; bos-bullish flips negative in the recent half).
-- **Rare high-conviction tier** (currently unreachable — cup-forming dropped;
-  re-enable only with fresh Binance evidence): cup-forming plus same-day
+- **Crypto** (`alertCryptoKinds`): five kinds. ma-alignment, near-52w-high and
+  volume-surge fire unconditionally. **cup-forming and bos-bullish are
+  regime-gated** (`config.regimeGates`, applied in `cryptoJob.js`): bos-bullish
+  fires in **sideways only**, cup-forming in **bear/sideways**. Both were
+  briefly dropped on 2026-07-31 on pooled numbers; the regime-gated Binance
+  re-validation the same day showed the pooled average was cancelling
+  opposite-signed regime cells (bos-bullish sideways t=2.65 vs bull/bear
+  t=-2.56; cup-forming strong in bear t=3.81 but month-clustered, flat in
+  bull). A gated kind does **not** fire when the regime is unavailable.
+- **Rare high-conviction tier** (reachable again, but only where cup-forming
+  is: bear/sideways): cup-forming plus same-day
   confluence with ≥2 validated kinds, 7-day hold. 0.497R / 67.8% on the original 12-pair
   universe, 0.380R / 63.1% on the current watchlist. Scoped in code to
   `RARE_TIER_UNIVERSE` — scanning a pair does not make it eligible.

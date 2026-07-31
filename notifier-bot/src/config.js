@@ -84,19 +84,31 @@ module.exports = {
   // across asset classes.
   //
   // UPDATE 2026-07-31 — Binance re-validation (after the OKX -> Binance
-  // USDⓈ-M swap) dropped cup-forming and bos-bullish from the defaults.
-  // cup-forming re-measured at -0.24% pooled / +0.02% bigcap cost-adjusted
-  // (0.25% round-trip) and FAILS the time-stability split: 0 occurrences in
-  // the most recent 365 days, i.e. its entire edge sat in the older bull
-  // year. Its rare-tier variant (cup-forming + confluence, R-multiple, RARE
-  // 9-pair universe) re-measured at 0.309R/7d vs the 0.497R that shipped on
-  // OKX, again with all trades in the older bull year. bos-bullish flips
-  // negative in the recent half (-0.47%) and is negative on midcap (-0.38%).
-  // The three that remain are stable in both halves and both cap tiers:
-  // ma-alignment +1.24%, near-52w-high +1.49%, volume-surge +1.73%.
+  // USDⓈ-M swap). Three kinds are stable everywhere and stay unconditional:
+  // ma-alignment +1.24%, near-52w-high +1.49%, volume-surge +1.73%
+  // cost-adjusted, in both time halves and both cap tiers.
+  // cup-forming and bos-bullish were briefly dropped (both looked negative
+  // POOLED across regimes: cup-forming -0.24%, 0 occurrences in the most
+  // recent 365 days; bos-bullish -0.47% in the recent half). The follow-up
+  // regime-gated validation showed the pooled numbers were averaging over
+  // opposite-signed regime cells rather than measuring no edge — so both are
+  // back in the defaults, but fire only in the regimes where they hold up.
+  // See regimeGates below for the per-kind evidence.
   alertCryptoKinds: csv(process.env.ALERT_CRYPTO_KINDS).length
     ? csv(process.env.ALERT_CRYPTO_KINDS)
-    : ['ma-alignment', 'near-52w-high', 'volume-surge'],
+    : ['ma-alignment', 'near-52w-high', 'volume-surge', 'cup-forming', 'bos-bullish'],
+  // Regime gates for kinds that are NOT regime-agnostic (2026-07-31 Binance
+  // validation): a kind listed here fires only when the live BTC regime is
+  // in the allowed list. Empty/missing = always on.
+  //   bos-bullish: sideways only  — the only regime where it clears the
+  //     independence guards (t=2.65); negative in bull AND bear (t=-2.56).
+  //   cup-forming: bear/sideways — its bull cell is flat/negative; the
+  //     bear cell is directionally strong (t=3.81) but fails the month
+  //     independence guards, so it stays gated rather than unconditional.
+  regimeGates: {
+    'cup-forming': ['bear', 'sideways'],
+    'bos-bullish': ['sideways'],
+  },
   earningsGuardDays: Number(process.env.EARNINGS_GUARD_DAYS || 3),
   // Leveraged position sizing (see src/positionSizing.js). ACCOUNT_SIZE is
   // optional — without it alerts still show max safe leverage and the

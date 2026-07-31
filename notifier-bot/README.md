@@ -69,10 +69,12 @@ everything else:
   halves. That held up against zero and fell apart against a random-entry
   control (0.199R vs 0.203R). **The stock side is now switched off entirely**;
   see "Stock alerts are off" below.
-- **`bos-bullish` (crypto)** — different result on crypto than stocks;
-  added to `alertCryptoKinds` (removed from defaults 2026-07-31 after
-  Binance re-validation showed it flips negative in the recent half — see
-  config.js comment).
+- **`bos-bullish` (crypto)** — different result on crypto than stocks; in
+  `alertCryptoKinds`, but **regime-gated to sideways only** since the
+  2026-07-31 Binance re-validation. Pooled it looked dead (negative in the
+  recent half); split by regime it is the one kind that clears the
+  independence guards in sideways (t=2.65) while being negative in both bull
+  and bear (t=-2.56). See `regimeGates` in `config.js`.
 - **`ob-bullish` on crypto is negative** despite being the stock star —
   deliberately not enabled there. Yet another reminder these don't
   transfer across asset classes.
@@ -191,10 +193,12 @@ of blending into the normal cup-forming alert. Deliberately scoped to only
 the original 12-pair crypto universe — expanding to 18 more mid-cap pairs
 was tested and the edge weakened sharply there, so this tier won't fire
 for a customized/wider `CRYPTO_WATCHLIST`. As of the 2026-07-31 Binance
-re-validation this tier is **not reachable at all**: `cup-forming` was
-dropped from `alertCryptoKinds` (it re-measured at 0.309R/7d vs the 0.497R
-above and failed the time-stability split), so the confluence special case
-can no longer trigger until cup-forming is re-enabled with fresh evidence.
+re-validation this tier is **regime-gated**, not removed: `cup-forming` only
+fires in a **bear or sideways** BTC regime (`regimeGates` in `config.js`), so
+the confluence special case can only trigger there — in a bull regime
+cup-forming is filtered out before confluence is considered. The gate exists
+because cup-forming's bull cell is flat/negative while its bear cell is
+strong (t=3.81) but too clustered in a few months to trust unconditionally.
 
 ## Crypto: hourly during waking hours, not just once a day
 
