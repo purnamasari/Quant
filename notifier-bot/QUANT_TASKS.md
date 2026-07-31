@@ -156,6 +156,14 @@ vol 1.74→1.89). **Status: ⏳ keep conservative until live fill data exists.**
 
 ## ⏳ Open backlog
 
+- [x] **Stock-token experiment (2026-07-31) — FAILED, reverted.** Dee asked to
+      try all stock edges + Binance USDT stock tokens (TSLA/AAPL/NVDA/COIN/...).
+      Out-of-universe backtest on 17 stock tokens (730d, hold 2, cost 0.25%):
+      every validated crypto kind went negative (ma-alignment −1.00%,
+      volume-surge −0.66%, cup-forming −1.92%; only momentum/macd-bullish
+      ≈ +0.0% noise). Classic cross-market non-transfer (cf. AGENTS.md).
+      CRYPTO_WATCHLIST reverted to the 12 validated pairs; ALERT_STOCK_KINDS
+      removed. The Yahoo stock run the same day was rate-limited (HTTP 429).
 - [ ] **Rare-tier re-validation** when the current (bear/sideways) regime
       accumulates enough fresh occurrences to pass n≥30 + month guards.
 - [ ] **Funding / OI filter research** — funding-extreme is detected but
