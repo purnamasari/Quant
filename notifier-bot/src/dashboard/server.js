@@ -76,12 +76,19 @@ function verifyInitData(initData, botToken) {
     return { ok: false, reason: `initData too old (${age}s)` };
   }
 
-  // Only the chat this bot is configured for may read the dashboard. Without
-  // this any Telegram user who opened the Mini App would see the account's
-  // signals — a valid signature proves "a real Telegram user", not "the owner".
+  // Only the owner may read the dashboard. A valid initData signature proves
+  // "a real Telegram user", not "the owner" — so the signing user is checked
+  // against the allowlist (DASHBOARD_ALLOWED_USER_IDS). When the allowlist is
+  // empty, fall back to the legacy TELEGRAM_CHAT_ID comparison (works in a
+  // private DM where chat id == user id; in a group deployment the group id
+  // never equals a personal id, so set the allowlist).
   let user = null;
   try { user = JSON.parse(params.get('user') || 'null'); } catch { /* leave null */ }
-  if (config.telegramChatId && user && String(user.id) !== String(config.telegramChatId)) {
+  const allow = config.dashboardAllowedUserIds;
+  const allowed = allow.length
+    ? allow.includes(String(user?.id))
+    : Boolean(config.telegramChatId && user && String(user.id) === String(config.telegramChatId));
+  if (!allowed) {
     return { ok: false, reason: 'user is not the configured chat owner' };
   }
 

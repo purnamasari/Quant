@@ -31,6 +31,16 @@ module.exports = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
   telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
   telegramThreadId: process.env.TELEGRAM_THREAD_ID || '',
+  // Telegram user IDs allowed to open the Mini App dashboard (comma-separated,
+  // e.g. "1576755331,12345"). The dashboard verifies initData signatures, and
+  // the owner check compares the signing user against THIS list. The legacy
+  // fallback (TELEGRAM_CHAT_ID) only works in a private DM where the chat id
+  // equals the user id — in a group deployment the group id never matches a
+  // personal id, so every owner gets 401 until the allowlist is set.
+  dashboardAllowedUserIds: (process.env.DASHBOARD_ALLOWED_USER_IDS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
   stockWatchlist: csv(process.env.STOCK_WATCHLIST),
   // Empty when unset — crypto/universe.js supplies its own (larger) default
   // validation universe rather than duplicating a fallback list here.
