@@ -19,6 +19,7 @@ async function sendMessage(text, { replyMarkup, attempt = 1 } = {}) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: config.telegramChatId,
+        ...(config.telegramThreadId ? { message_thread_id: config.telegramThreadId } : {}),
         text,
         parse_mode: 'HTML',
         disable_web_page_preview: true,
@@ -49,6 +50,7 @@ async function sendPhoto(photoBuffer, caption, { replyMarkup, attempt = 1 } = {}
   try {
     const form = new FormData();
     form.append('chat_id', config.telegramChatId);
+    if (config.telegramThreadId) form.append('message_thread_id', config.telegramThreadId);
     if (caption) {
       form.append('caption', caption);
       form.append('parse_mode', 'HTML');

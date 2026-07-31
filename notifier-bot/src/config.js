@@ -30,6 +30,7 @@ function csv(value) {
 module.exports = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
   telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
+  telegramThreadId: process.env.TELEGRAM_THREAD_ID || '',
   stockWatchlist: csv(process.env.STOCK_WATCHLIST),
   // Empty when unset — crypto/universe.js supplies its own (larger) default
   // validation universe rather than duplicating a fallback list here.
