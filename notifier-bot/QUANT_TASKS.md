@@ -155,6 +155,17 @@ Binance futures round-trip ≈ 0.10–0.14% taker. The 0.25% assumption makes
 real edges look ~0.15pp worse than they are (ma 1.24→1.39, near 1.49→1.64,
 vol 1.74→1.89). **Status: ⏳ keep conservative until live fill data exists.**
 
+## 🧭 Quant research stack (2026-07-31, Dee)
+
+Arah "mendekati quant": Zipline-reloaded + Parquet + semua data di Postgres
+(scout-postgres:5432, DB `quant`), dashboard hasil backtest di Market Pulse,
+loop harian iteratif (ingest → suite backtest → review Bima → eksperimen baru).
+
+- [ ] **P0 — Data pipeline**: Binance daily bars (30+ pair) → parquet (raw) → Postgres tables (candles, assets, backtest_runs, results)
+- [ ] **P1 — Zipline**: install zipline-reloaded + pyarrow, bundle dari Postgres, port 5 detektor crypto jadi algo/faktor, backtest standar (Sharpe/drawdown/R-multiple/regime split). RAM 3.6GB → daily bars dulu, intraday nyusul
+- [ ] **P2 — Dashboard hasil**: di Market Pulse (FastAPI + TanStack): equity curve, metrik per sinyal, perbandingan run
+- [ ] **P3 — Daily loop (jadwal Dee)**: cron suite backtest jam **03:00 WIB**, report + usulan eksperimen jam **07:00 WIB** ke chat
+
 ## ⏳ Open backlog
 
 - [x] **Stock-token experiment (2026-07-31) — FAILED, reverted.** Dee asked to
