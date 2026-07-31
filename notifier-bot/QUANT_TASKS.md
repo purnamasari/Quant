@@ -73,7 +73,12 @@ improvement candidate · ⏳ needs product decision
 - [x] **Daily BTC bias job (08:00 WIB)** — `src/dailyBias.js`, one context
       message per day: regime, 1D/4H structure bias (+ ⚠️ konflik when they
       disagree), close, 7d/30d change, distance to 200SMA, and a per-regime
-      one-liner. Context framing only, never an entry. `sendMessage` only — no
+      one-liner. Exactly one message (photo + caption): the chart follows a
+      weekday cadence — Monday WIB charts 1D candles with a 7-candle forecast
+      (weekly outlook), Tue–Sun charts 4H candles with a 12-candle forecast
+      (intraday); the caption still reports both biases either way, and a failed
+      forecast/render degrades to text-only.
+      Context framing only, never an entry. `sendMessage` only — no
       `getUpdates`, which would steal callbacks from the tracking poller on the
       shared bot token. Cron:
       ```
