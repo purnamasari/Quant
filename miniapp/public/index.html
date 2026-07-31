@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tradeway Mini</title>
+<style>
+  /* Mobile-first, single column: a Telegram Mini App is a phone viewport in
+     practice. Colours come from Telegram's theme variables so the page matches
+     whichever theme the client is in, with fallbacks for a plain browser. */
+  :root {
+    --bg: var(--tg-theme-bg-color, #17181c);
+    --card: var(--tg-theme-secondary-bg-color, #212228);
+    --text: var(--tg-theme-text-color, #f2f3f5);
+    --muted: var(--tg-theme-hint-color, #8c8f97);
+    --accent: var(--tg-theme-link-color, #5ac8fa);
+    --good: #35c46b;
+    --bad: #ff5f56;
+    --warn: #ffb020;
+    --r: 14px;
+    --nav: 58px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    /* 48px top: the Mini App header overlaps the page in some clients and cuts
+       off the title. Bottom leaves room for the fixed nav. */
+    margin: 0;
+    padding: 48px 12px calc(var(--nav) + 18px + env(safe-area-inset-bottom));
+    background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  h1 { font-size: 17px; margin: 2px 0; }
+  .sub { color: var(--muted); font-size: 11px; margin-bottom: 12px; }
+  .who { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+  .card { background: var(--card); border-radius: var(--r); padding: 12px; margin-bottom: 10px; }
+  .card.tap { cursor: pointer; }
+  .card.silent { opacity: .6; }
+  .top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .sym { font-weight: 700; font-size: 16px; }
+  .kind { color: var(--muted); font-size: 12px; }
+  .k { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+  .v { font-size: 19px; font-weight: 700; margin-top: 2px; }
+  .v.sm { font-size: 15px; }
+  .row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--card); border-radius: var(--r); padding: 10px 12px; min-width: 0; }
+
+  .pill { font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 999px;
+          text-transform: uppercase; white-space: nowrap; }
+  .pill.very-high { background: #3b2a05; color: #ffd166; }
+  .pill.high, .pill.bull, .pill.go, .pill.long, .pill.bullish { background: #0d3320; color: var(--good); }
+  .pill.medium, .pill.low, .pill.sideways, .pill.wait, .pill.neutral { background: #2c2d34; color: var(--muted); }
+  .pill.bear, .pill.no_go, .pill.short, .pill.bearish { background: #3a1512; color: var(--bad); }
+  .note { color: var(--warn); font-size: 11px; margin-top: 6px; }
+  .pos { color: var(--good); } .neg { color: var(--bad); }
+
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+  .metrics div { background: rgba(255,255,255,.04); border-radius: 9px; padding: 6px 8px; }
+  .metrics .k { font-size: 10px; }
+  .metrics .v { font-size: 14px; }
+
+  .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; }
+  .empty { color: var(--muted); text-align: center; padding: 26px 12px; font-size: 14px; }
+  .err { background: #3a1512; color: #ffb4ae; border-radius: var(--r); padding: 12px; font-size: 13px; }
+  .btn { background: var(--accent); color: #06212e; border: none; border-radius: 10px;
+         padding: 8px 14px; font-size: 13px; font-weight: 700; margin-top: 10px; cursor: pointer; }
+  .back { background: none; border: none; color: var(--accent); font-size: 14px; padding: 6px 0; cursor: pointer; }
+  .tchart { width: 100%; height: 220px; margin-top: 8px; }
+  .forecast-note { color: var(--muted); font-size: 11px; margin-top: 6px; }
+  .mp-head { padding: 10px 12px; }
+  .mp-price { font-size: 18px; font-weight: 700; }
+  .mp-change { font-size: 12px; font-weight: 700; margin-left: 7px; }
+  .mp-unavailable { color: var(--muted); font-size: 12px; padding: 8px 0; }
+  .event-title { font-weight: 600; font-size: 13px; line-height: 1.35; }
+  .event-meta { color: var(--muted); font-size: 11px; margin-top: 3px; }
+  a { color: var(--accent); text-decoration: none; }
+
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex;
+        background: var(--card); border-top: 1px solid rgba(255,255,255,.06);
+        padding-bottom: env(safe-area-inset-bottom); z-index: 10; }
+  nav button { flex: 1; background: none; border: none; color: var(--muted);
+               font-size: 12px; font-weight: 600; padding: 11px 0 12px; cursor: pointer; }
+  nav button b { display: block; font-size: 16px; font-weight: 400; line-height: 1.3; }
+  nav button[aria-selected="true"] { color: var(--accent); }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Tradeway Mini</h1>
+    <div class="who" id="who"></div>
+  </header>
+  <div class="sub" id="sub">memuat…</div>
+  <div id="root"></div>
+
+  <nav id="nav">
+    <button data-tab="quant" aria-selected="true"><b>📈</b>Quant</button>
+    <button data-tab="posisi" aria-selected="false"><b>💼</b>Posisi</button>
+    <button data-tab="market" aria-selected="false"><b>🌐</b>Market</button>
+  </nav>
+
+<script src="/vendor/lightweight-charts.standalone.production.js"></script>
+<script>
+(function () {
+  // Telegram injects window.Telegram.WebApp into the webview itself when the
+  // page is opened as a Mini App, so no SDK script is loaded here.
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { try { tg.ready(); tg.expand(); } catch (e) { /* older clients */ } }
+  var initData = (tg && tg.initData) || '';
+
+  var root = document.getElementById('root');
+  var sub = document.getElementById('sub');
+  var tab = 'quant';
+  var quant = null, token = null, positions = null, market = null;
+  var tokenChart = null, posTimer = null;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+  function num(n, d) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toFixed(d == null ? 2 : d);
+  }
+  function sign(n, d) {
+    if (n == null || isNaN(n)) return '—';
+    return (Number(n) >= 0 ? '+' : '') + Number(n).toFixed(d == null ? 3 : d);
+  }
+  function cls(n) { return n == null ? '' : (Number(n) >= 0 ? 'pos' : 'neg'); }
+  function ago(iso) {
+    var m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (isNaN(m)) return '—';
+    if (m < 60) return m + 'm';
+    if (m < 1440) return Math.floor(m / 60) + 'j';
+    return Math.floor(m / 1440) + 'h';
+  }
+  function wib(iso) {
+    try {
+      return new Date(iso).toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short'
+      });
+    } catch (e) { return iso; }
+  }
+  function slug(s) { return String(s || '').toLowerCase().replace(/[^a-z_]/g, ''); }
+  function pill(label, tone) {
+    if (!label) return '<span class="pill neutral">—</span>';
+    return '<span class="pill ' + slug(tone == null ? label : tone) + '">' + esc(String(label).replace(/_/g, ' ')) + '</span>';
+  }
+
+  // Every call carries initData; a 401 means the page was opened outside
+  // Telegram (or the signature aged out), which is a distinct, recoverable state.
+  function api(path) {
+    return fetch(path, { headers: { 'x-telegram-init-data': initData } }).then(function (r) {
+      if (r.status === 401) { var e = new Error('unauthorized'); e.unauthorized = true; e.status = 401; throw e; }
+      return r.json().then(function (body) {
+        if (!r.ok) { var e = new Error((body && (body.error || body.detail)) || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+        return body;
+      }, function () { var e = new Error('HTTP ' + r.status); e.status = r.status; throw e; });
+    });
+  }
+  function gate() {
+    return '<div class="err">Sesi tidak valid, buka lewat Telegram.</div>' +
+      '<button class="btn" id="retry">Coba lagi</button>';
+  }
+  function fail(err) {
+    return err && err.unauthorized ? gate() : '<div class="err">' + esc(err.message) + '</div>' +
+      '<button class="btn" id="retry">Coba lagi</button>';
+  }
+
+  // ── Quant ────────────────────────────────────────────────────────────────
+  function regimeEmoji(r) {
+    return r === 'bull' ? '🟢' : r === 'bear' ? '🔴' : '⚪';
+  }
+  function regimeStrip() {
+    var s = quant.summary || {}, st = (quant.regimes || {}).structure;
+    var h = '<div class="row">' +
+      '<div class="stat"><div class="k">crypto</div><div class="v sm">' +
+      regimeEmoji(s.cryptoRegime) + ' ' + pill(s.cryptoRegime || 'unknown') + '</div></div>' +
+      '<div class="stat"><div class="k">saham</div><div class="v sm">' +
+      regimeEmoji(s.stockRegime) + ' ' + pill(s.stockRegime || 'unknown') + '</div></div></div>';
+    if (st) {
+      h += '<div class="card"><div class="k">struktur BTC</div>' +
+        '<div style="margin-top:5px">1D ' + pill(st.daily || 'unknown') +
+        ' &nbsp; 4H ' + pill(st.fourHour || 'unknown') + '</div>' +
+        (st.conflict ? '<div class="note">⚠️ konflik antar timeframe</div>' : '') + '</div>';
+    }
+    return h;
+  }
+  function signalCard(s) {
+    var tier = s.conviction || 'low';
+    return '<div class="card tap' + (s.notified ? '' : ' silent') + '" data-token="' + esc(s.symbol) + '">' +
+      '<div class="top"><div><span class="sym">' + esc(s.symbol) + '</span> ' +
+      '<span class="kind">' + esc(s.kind) + '</span></div>' + pill(tier) + '</div>' +
+      '<div class="kind">' + ago(s.at) + ' lalu · ' + esc(s.direction || '—') + ' · ' +
+      (s.notified ? '<b>dikirim</b>' : 'senyap') + '</div></div>';
+  }
+  function vQuant() {
+    if (!quant) return '<div class="empty">memuat…</div>';
+    var list = quant.signals || [];
+    return regimeStrip() +
+      '<div class="card"><div class="kind">Ketuk kartu untuk detail token.</div></div>' +
+      (list.length ? list.map(signalCard).join('') : '<div class="empty">Belum ada sinyal.</div>');
+  }
+  function vToken() {
+    var t = token;
+    if (!t) return '<button class="back" id="back">← kembali</button><div class="empty">memuat…</div>';
+    if (t.error) return '<button class="back" id="back">← kembali</button><div class="err">' + esc(t.error) + '</div>';
+    return '<button class="back" id="back">← kembali</button>' +
+      marketPulseHeader(t) +
+      '<div class="card"><div class="top"><span class="sym">' + esc(t.symbol) + '</span>' +
+      pill(t.capTier || '—', t.rareTierEligible ? 'high' : 'medium') + '</div>' +
+      '<div class="tchart" id="token-chart"></div><div class="forecast-note" id="forecast-note"></div>' +
+      '<div class="metrics"><div><div class="k">harga</div><div class="v">' + esc(t.last) + '</div></div>' +
+      '<div><div class="k">7 hari</div><div class="v ' + cls(t.change7d) + '">' + sign(t.change7d, 1) + '%</div></div>' +
+      '<div><div class="k">30 hari</div><div class="v ' + cls(t.change30d) + '">' + sign(t.change30d, 1) + '%</div></div>' +
+      '</div></div>' +
+      marketPulseEvents(t) + marketPulseSentiment(t) +
+      '<div class="k" style="margin:14px 0 6px">RIWAYAT SINYAL</div>' +
+      ((t.signals && t.signals.length) ? t.signals.map(signalCard).join('')
+        : '<div class="empty">Belum ada sinyal untuk token ini.</div>');
+  }
+  function mpSection(t, name) {
+    return t.marketPulse && t.marketPulse[name];
+  }
+  function mpData(section) {
+    return section && section.data && (section.data.data || section.data);
+  }
+  function marketPulseHeader(t) {
+    var section = mpSection(t, 'detail');
+    if (!section || section.loading) return '<div class="card mp-head"><div class="mp-unavailable">Market Pulse memuat…</div></div>';
+    if (section.error) return '<div class="card mp-head"><div class="mp-unavailable">Market Pulse: data tidak tersedia</div></div>';
+    var d = mpData(section) || {};
+    return '<div class="card mp-head"><div class="top"><span class="sym">' + esc(d.symbol || t.symbol) + '</span>' +
+      '<span class="pill neutral">Market Pulse</span></div><div style="margin-top:4px">' +
+      '<span class="mp-price">' + (d.current_price == null ? '—' : '$' + num(d.current_price, d.current_price < 1 ? 5 : 2)) + '</span>' +
+      '<span class="mp-change ' + cls(d.change_24h) + '">24j ' + sign(d.change_24h, 2) + '%</span>' +
+      '<span class="mp-change ' + cls(t.change7d) + '">7d ' + sign(t.change7d, 1) + '%</span></div></div>';
+  }
+  function marketPulseSentiment(t) {
+    var section = mpSection(t, 'sentiment');
+    if (!section || section.loading || section.error) return '';
+    var s = mpData(section) || {}, asset = (s.assetSentiments || {})[baseToken(t.symbol)];
+    if (!asset) return '';
+    return '<div class="card"><div class="top"><div class="k">AI SENTIMENT</div>' + pill(asset.direction || 'neutral') + '</div>' +
+      '<div class="kind" style="margin-top:5px">conf ' + num((asset.confidence || 0) * 100, 0) + '% · ' + esc(asset.reason || '—') + '</div></div>';
+  }
+  function marketPulseEvents(t) {
+    var section = mpSection(t, 'events');
+    var h = '<div class="k" style="margin:14px 0 6px">TOKEN EVENTS</div>';
+    if (!section || section.loading) return h + '<div class="mp-unavailable">memuat…</div>';
+    if (section.error) return h + '<div class="mp-unavailable">data tidak tersedia</div>';
+    var list = mpData(section) || [];
+    if (!Array.isArray(list) || !list.length) return h + '<div class="empty">Tidak ada event</div>';
+    return h + list.slice(0, 5).map(function (e) {
+      return '<div class="card"><div class="top"><div class="event-title">' + esc(e.title || 'Event') + '</div>' +
+        pill(e.impact || e.severity || e.kind || '—') + '</div><div class="event-meta">' +
+        (e.published_at ? wib(e.published_at) + ' WIB · ' : '') + esc(e.kind || e.type || '—') + '</div></div>';
+    }).join('');
+  }
+  function baseToken(symbol) {
+    return String(symbol || '').toUpperCase().replace(/(USDT|USDC|FDUSD|BUSD|TUSD|USD)$/, '');
+  }
+  function renderTokenChart(t) {
+    if (tokenChart) { tokenChart.remove(); tokenChart = null; }
+    var el = document.getElementById('token-chart');
+    if (!el || !window.LightweightCharts || !t.candles || t.candles.length < 2) return;
+
+    var LC = window.LightweightCharts;
+    var chart = LC.createChart(el, {
+      layout: { background: { color: 'transparent' }, textColor: '#8c8f97', fontSize: 11, attributionLogo: false },
+      grid: { vertLines: { color: 'rgba(255,255,255,0.04)' }, horzLines: { color: 'rgba(255,255,255,0.04)' } },
+      rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false }, autoSize: true
+    });
+    var real = chart.addCandlestickSeries({
+      upColor: '#35c46b', downColor: '#ff5f56', borderVisible: false,
+      wickUpColor: '#35c46b', wickDownColor: '#ff5f56'
+    });
+    real.setData(t.candles);
+
+    if (t.forecast && t.forecast.candles && t.forecast.candles.length) {
+      // Projection is drawn translucent so it never reads as realised price.
+      var cone = chart.addAreaSeries({
+        lineColor: 'rgba(0,180,255,0)', topColor: 'rgba(0,180,255,0.08)',
+        bottomColor: 'rgba(0,180,255,0.02)', lineWidth: 0
+      });
+      cone.setData((t.forecast.cone || []).map(function (c) { return { time: c.time, value: c.upper }; }));
+      var projected = chart.addCandlestickSeries({
+        upColor: 'rgba(0,180,255,0.35)', downColor: 'rgba(255,120,120,0.35)', borderVisible: false,
+        wickUpColor: 'rgba(0,180,255,0.35)', wickDownColor: 'rgba(255,120,120,0.35)'
+      });
+      projected.setData(t.forecast.candles.map(function (c) {
+        return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close };
+      }));
+      var path = chart.addLineSeries({
+        color: 'rgba(0,180,255,0.6)', lineStyle: 2, lineWidth: 1,
+        lastValueVisible: false, priceLineVisible: false
+      });
+      path.setData(t.forecast.candles.map(function (c) { return { time: c.time, value: c.close }; }));
+      var m = t.forecast.metadata || {}, note = document.getElementById('forecast-note');
+      if (note) note.textContent = '🎯 TP ~' + Math.round((m.tpHitProbability || 0) * 100) +
+        '% · SL ~' + Math.round((m.slHitProbability || 0) * 100) + '% · ~' +
+        (m.barsToTp == null ? '—' : Math.round(m.barsToTp)) + ' bar ke TP';
+    }
+    chart.timeScale().fitContent();
+    tokenChart = chart;
+  }
+
+  // ── Posisi ───────────────────────────────────────────────────────────────
+  function vPosisi() {
+    if (positions === null) return '<div class="empty">memuat…</div>';
+    if (positions.offline) return '<div class="empty">Tradeway API belum aktif</div>';
+    if (!positions.length) return '<div class="empty">Tidak ada posisi terbuka.</div>';
+    return positions.map(function (p) {
+      var long = String(p.side).toLowerCase() === 'buy';
+      return '<div class="card"><div class="top"><span class="sym">' + esc(p.symbol) + '</span>' +
+        pill(long ? 'LONG' : 'SHORT', long ? 'long' : 'short') + '</div>' +
+        '<div class="kind">size ' + num(p.size, 4) + ' · ' + (p.leverage != null ? p.leverage + 'x' : '—') + '</div>' +
+        '<div class="metrics"><div><div class="k">entry</div><div class="v">' + num(p.entryPrice, 4) + '</div></div>' +
+        '<div><div class="k">mark</div><div class="v">' + num(p.markPrice, 4) + '</div></div>' +
+        '<div><div class="k">uPnL</div><div class="v ' + cls(p.unrealisedPnl) + '">' +
+        sign(p.unrealisedPnl, 2) + '</div></div></div></div>';
+    }).join('');
+  }
+  function loadPositions() {
+    return api('/api/tradeway/positions').then(function (d) {
+      positions = Array.isArray(d) ? d : [];
+    }).catch(function (e) {
+      if (e.unauthorized) throw e;
+      positions = { offline: true };
+    });
+  }
+
+  // ── Market ───────────────────────────────────────────────────────────────
+  function sentimentCard(s) {
+    if (!s) return '<div class="card"><div class="k">sentimen</div><div class="kind">—</div></div>';
+    var ms = s.marketSentiment || {};
+    var score = ms.score == null ? null : Number(ms.score);
+    return '<div class="card"><div class="top"><div class="k">sentimen pasar</div>' +
+      '<div class="kind">' + (s.snapshotAt ? ago(s.snapshotAt) + ' lalu' : '—') + '</div></div>' +
+      '<div class="v">' + (score == null ? '—' : score.toFixed(0)) + ' · ' + esc(ms.label || '—') + '</div>' +
+      '<div class="bar"><i style="width:' + (score == null ? 0 : Math.max(0, Math.min(100, score))) +
+      '%;background:' + (score != null && score >= 50 ? 'var(--good)' : 'var(--warn)') + '"></i></div>' +
+      '<div class="kind" style="margin-top:8px">' + esc(ms.description || s.aiBrief || '—') + '</div>' +
+      '<div class="kind" style="margin-top:6px">bull ' + num((ms.bullish_ratio || 0) * 100, 0) +
+      '% · bear ' + num((ms.bearish_ratio || 0) * 100, 0) + '% · netral ' +
+      num((ms.neutral_ratio || 0) * 100, 0) + '% · ' + (s.headlinesAnalyzed || 0) + ' headline</div></div>';
+  }
+  function assetCards(s) {
+    var a = (s && s.assetSentiments) || {};
+    var keys = Object.keys(a).slice(0, 8);
+    if (!keys.length) return '';
+    return '<div class="k" style="margin:14px 0 6px">PER ASET</div>' + keys.map(function (k) {
+      var v = a[k] || {};
+      return '<div class="card"><div class="top"><span class="sym">' + esc(k) + '</span>' +
+        pill(v.direction || 'neutral') + '</div>' +
+        '<div class="kind">conf ' + num((v.confidence || 0) * 100, 0) + '% · ' + esc(v.reason || '—') + '</div></div>';
+    }).join('');
+  }
+  function universeCards(u) {
+    if (!u) return '';
+    var st = u.market_state || {}, acc = u.account || {};
+    var h = '<div class="card"><div class="top"><div class="k">regime pasar</div>' +
+      '<div class="kind">' + (u.snapshot_timestamp ? ago(u.snapshot_timestamp) + ' lalu' : '—') + '</div></div>' +
+      '<div class="v sm">' + pill(st.regime || 'unknown') + ' ' + pill(st.trend || 'neutral') + '</div>' +
+      '<div class="kind" style="margin-top:6px">confidence ' + num(st.regime_confidence, 0) +
+      ' · akun ' + esc(acc.status || '—') + ' · ' + (acc.open_positions == null ? '—' : acc.open_positions) +
+      ' posisi · BP ' + num(acc.buying_power, 2) + '</div></div>';
+
+    // Only "go" verdicts are worth the vertical space on a phone; the rest are
+    // noise the desk already filtered out.
+    var v = (u.verdicts || []).filter(function (x) { return x.state === 'go'; }).slice(0, 6);
+    if (!v.length) v = (u.verdicts || []).slice(0, 6);
+    h += '<div class="k" style="margin:14px 0 6px">VERDICT</div>' + (v.length ? v.map(function (x) {
+      return '<div class="card"><div class="top"><div><span class="sym">' + esc(x.symbol) + '</span> ' +
+        '<span class="kind">' + esc(x.objective || '—') + '</span></div>' +
+        pill(x.state || 'wait') + '</div>' +
+        '<div class="kind">' + esc(x.direction || '—') + ' · conf ' + num(x.confidence, 0) + '</div>' +
+        '<div class="kind" style="margin-top:4px">' + esc(x.what_flips_it || x.invalidated_by || '—') + '</div></div>';
+    }).join('') : '<div class="empty">Belum ada verdict.</div>');
+    return h;
+  }
+  function macroStrip(ev) {
+    var list = (ev && ev.data) || [];
+    if (!list.length) return '<div class="card"><div class="k">makro 7 hari</div>' +
+      '<div class="kind">Tidak ada event terjadwal.</div></div>';
+    return '<div class="k" style="margin:14px 0 6px">MAKRO 7 HARI</div>' + list.slice(0, 6).map(function (e) {
+      return '<div class="card"><div class="top"><div style="font-weight:600;min-width:0">' + esc(e.title) + '</div>' +
+        pill(e.impact || e.source_impact || '—') + '</div>' +
+        '<div class="kind">' + esc(e.country || '—') + ' · ' + (e.occurs_at ? wib(e.occurs_at) + ' WIB' : '—') +
+        (e.forecast ? ' · kons. ' + esc(e.forecast) : '') +
+        (e.previous ? ' · prev ' + esc(e.previous) : '') + '</div></div>';
+    }).join('');
+  }
+  function vMarket() {
+    if (!market) return '<div class="empty">memuat…</div>';
+    if (market.offline) return '<div class="empty">Market API belum aktif</div>';
+    return sentimentCard(market.sentiment) + universeCards(market.universe) +
+      macroStrip(market.macro) + assetCards(market.sentiment);
+  }
+  function loadMarket() {
+    // Each section fails on its own — one dead endpoint must not blank the tab.
+    function soft(p) {
+      return api(p).then(function (d) { return d; }, function (e) {
+        if (e.unauthorized) throw e;
+        return null;
+      });
+    }
+    return Promise.all([
+      soft('/api/market/sentiment/current'),
+      soft('/api/market/universe'),
+      soft('/api/market/events/economic?days=7')
+    ]).then(function (r) {
+      market = { sentiment: r[0], universe: r[1], macro: r[2] };
+      if (!r[0] && !r[1] && !r[2]) market = { offline: true };
+    });
+  }
+
+  // ── Shell ────────────────────────────────────────────────────────────────
+  function subline() {
+    if (tab === 'quant') {
+      var m = (quant && quant.meta) || {};
+      return (m.window || '') + (m.exit ? ' · ' + m.exit : '');
+    }
+    if (tab === 'posisi') return 'Bybit · refresh 30 detik';
+    return 'Market Pulse · sentimen + regime + makro';
+  }
+  function paint(html) {
+    if (tokenChart) { tokenChart.remove(); tokenChart = null; }
+    root.innerHTML = html;
+    sub.textContent = subline();
+    Array.prototype.forEach.call(root.querySelectorAll('[data-token]'), function (el) {
+      el.addEventListener('click', function () { openToken(el.dataset.token); });
+    });
+    var back = root.querySelector('#back');
+    if (back) back.addEventListener('click', function () { token = null; render(); });
+    var retry = root.querySelector('#retry');
+    if (retry) retry.addEventListener('click', function () { load(true); });
+  }
+  function render() {
+    if (tab === 'quant') { paint(token !== null ? vToken() : vQuant()); if (token && !token.error) renderTokenChart(token); return; }
+    if (tab === 'posisi') return paint(vPosisi());
+    return paint(vMarket());
+  }
+  function openToken(symbol) {
+    token = { symbol: symbol, loading: true, marketPulse: {
+      detail: { loading: true }, events: { loading: true }, sentiment: { loading: true }
+    } };
+    var opened = token;
+    render();
+    api('/api/quant/token?symbol=' + encodeURIComponent(symbol))
+      .then(function (d) {
+        if (token !== opened) return;
+        Object.keys(d).forEach(function (k) { opened[k] = d[k]; });
+        opened.loading = false;
+        render();
+      })
+      .catch(function (e) {
+        if (token !== opened) return;
+        token = e.unauthorized ? null : { error: e.message };
+        if (!token) paint(gate()); else render();
+      });
+
+    // Market Pulse is supplementary: its unavailable sections must never hide
+    // the Quant chart. A 401 is the sole exception, because it invalidates the
+    // Mini App session rather than just one upstream source.
+    function optional(path) {
+      return api(path).then(function (d) { return { data: d }; }, function (e) {
+        if (e.unauthorized) throw e;
+        return { error: e };
+      });
+    }
+    Promise.all([
+      optional('/api/market/token/' + encodeURIComponent(symbol)),
+      optional('/api/market/token-events?symbol=' + encodeURIComponent(symbol)),
+      optional('/api/market/sentiment/current')
+    ]).then(function (r) {
+      if (token !== opened) return;
+      opened.marketPulse = { detail: r[0], events: r[1], sentiment: r[2] };
+      render();
+    }).catch(function (e) {
+      if (token !== opened || !e.unauthorized) return;
+      token = null;
+      paint(gate());
+    });
+  }
+
+  function load(force) {
+    var job;
+    if (tab === 'quant') {
+      if (quant && !force) { render(); return; }
+      job = api('/api/quant/state?days=14').then(function (d) { quant = d; });
+    } else if (tab === 'posisi') {
+      job = loadPositions();
+    } else {
+      if (market && !force) { render(); return; }
+      job = loadMarket();
+    }
+    render();
+    job.then(render).catch(function (e) { paint(fail(e)); });
+  }
+
+  // Positions poll only while their tab is on screen — a background poll on a
+  // phone is battery spent on a view nobody is looking at.
+  function syncPolling() {
+    if (posTimer) { clearInterval(posTimer); posTimer = null; }
+    if (tab !== 'posisi') return;
+    posTimer = setInterval(function () {
+      if (document.hidden) return;
+      loadPositions().then(function () { if (tab === 'posisi') render(); }).catch(function (e) { paint(fail(e)); });
+    }, 30000);
+  }
+
+  var nav = document.getElementById('nav');
+  Array.prototype.forEach.call(nav.querySelectorAll('button'), function (btn) {
+    btn.addEventListener('click', function () {
+      tab = btn.dataset.tab;
+      token = null;
+      Array.prototype.forEach.call(nav.querySelectorAll('button'), function (b) {
+        b.setAttribute('aria-selected', String(b === btn));
+      });
+      syncPolling();
+      load(false);
+    });
+  });
+
+  var who = document.getElementById('who');
+  var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if (u && u.first_name) who.textContent = u.first_name;
+
+  if (!initData) {
+    sub.textContent = '';
+    paint(gate());
+  } else {
+    load(false);
+  }
+})();
+</script>
+</body>
+</html>
