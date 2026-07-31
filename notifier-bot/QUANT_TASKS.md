@@ -166,8 +166,10 @@ vol 1.74→1.89). **Status: ⏳ keep conservative until live fill data exists.**
 - [ ] **`job.js` daily job** — skipped on deploy because its `getUpdates`
       polling conflicts with the shared Hermes bot token. Revisit if Dee gets
       a dedicated bot token.
-- [ ] **Mini App dashboard** — `DASHBOARD_PORT=8787 node src/dashboard/server.js`
-      behind HTTPS; needs Caddy + BotFather menu-button registration.
+- [x] **Mini App dashboard — DEPLOYED 2026-07-31** —
+      `https://quant.dev.heydewi.com` (Caddy HTTPS + systemd
+      `quant-dashboard.service`, port 8787, `DASHBOARD_REQUIRE_AUTH` on).
+      Next: BotFather menu button (see DEPLOY.md §8).
 - [ ] **Weekly scoreboard refresh** — `npm run scoreboard` /
       `npm run scoreboard:regime` after threshold changes land.
 
