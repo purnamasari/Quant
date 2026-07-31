@@ -925,3 +925,18 @@ using a marketable limit AT the signal close to capture part of the maker/taker
 spread without fill risk — that cannot be measured from daily candles and needs
 live fill data, so it stays open as an execution question rather than a
 strategy one.
+
+---
+
+## 2026-07-31 Binance re-validation (data source swapped OKX → Binance fapi)
+
+The bot's crypto data source was switched from OKX to Binance USDⓈ-M futures
+(`src/crypto/binance.js`). Every number in the sections above was measured on
+OKX candles and does not transfer unchanged — Binance and OKX daily closes
+differ by 0.01–1.24% (different UTC candle-close conventions), which can shift
+a daily signal by a day.
+
+Full re-validation results, cap-tier split, rare-tier re-measurement, regime
+split with independence guards, event-window split, and the policy decision
+(Policy C: regime-gated cup-forming/bos-bullish instead of removal) are in
+**`data/binance-revalidation-2026-07-31.md`**.
