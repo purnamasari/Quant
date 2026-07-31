@@ -138,6 +138,24 @@ later tell a detector gap apart from a policy decision.
 Chart rendering sits inside the notify branch. It is the most expensive step in
 the pipeline and must not run for something nobody is shown.
 
+**A push is ONE message.** The chart is the photo, the full alert text is its
+caption, and the tracking buttons ride on that same message
+(`sendPhoto(png, caption, { replyMarkup })`). It used to be two messages — photo
+then text — which split every alert across a scroll boundary and put the buttons
+on a message with no picture. The consequence is a hard budget: Telegram cuts
+captions at **1024 chars**, so `formatCryptoAlert` is written to land well under
+it (~400-700 typical) and `deliverAlert.js` truncates as a backstop. Anything
+added to the alert text has to displace something. If the render fails, delivery
+falls back to text-only rather than dropping the alert.
+
+The text was cut down to match: no random-baseline sub-line, no exit-rule
+reminder, no multi-row position plan (one `⚙️ Max aman Nx → pakai Mx` line
+instead), no regime parenthetical, news capped at 2. What was added is a `🎯 TP
+x% · SL y% · ~n bar ke TP` line fed by the forecast ensemble — the same
+projection drawn on the chart, so picture and caption cannot disagree. The
+forecast is built once at scan time (`src/forecast/input.js`, called from
+`cryptoJob.js`) and carried on the alert object.
+
 ## Regime adjustment: mechanism live, evidence bar in charge
 
 `src/regime.js` classifies BTC as bull/sideways/bear (200SMA position + slope).
@@ -194,6 +212,15 @@ rare tier's spectacular sideways cell (+2.11R, 92.5% WR) is **refused** by guard
   fails (0 occurrences in the most recent 365 days; every trade sits in the
   older bull year). The 0.497R / 67.8% number above is an OKX-era target-based
   measurement and must not be quoted as applying to Binance data.
+
+- **Daily BTC bias** (`src/dailyBias.js`, cron `0 1 * * *` UTC = 08:00 WIB): one
+  message every morning with regime, 1D/4H structure bias, and 7d/30d/vs-200SMA
+  context. It exists because a quiet scan and a broken scan look identical from
+  the outside — this is the standing "here is what the market is doing" even on
+  days nothing fires. Worded as context, never as an entry (same reasoning as
+  `formatStructureAlert`). `sendMessage` only, no `getUpdates`: the bot token is
+  shared with the tracking poller and a second `getUpdates` consumer would steal
+  its callbacks.
 
 Note the aggregate is carried by ETH/SOL/BNB; **BTC measured -0.06R on n=37**
 with this filter. That matters because BTC also tolerates the most leverage.

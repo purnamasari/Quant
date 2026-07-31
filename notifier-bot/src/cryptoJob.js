@@ -48,6 +48,7 @@ const { shouldSend } = require('./cryptoDedup');
 const { deliverAlerts } = require('./deliverAlert');
 const { positionPlan } = require('./positionSizing');
 const { checkProtections } = require('./protections');
+const { buildForecastForAlert } = require('./forecast/input');
 
 // "Rare high-conviction" tier: cup-forming + same-day confluence with >=1
 // other validated kind, R-multiple-backtested at 0.497 avgR / 67.8% WR
@@ -188,7 +189,10 @@ async function scanCrypto() {
           stats, conviction, regime, confluenceCount, relVol, news, rareTier, uncondConfluence: uncondCount,
         });
 
-        alerts.push({
+        // The forecast is built once here, not at delivery time, so the chart
+        // and the caption read the same projection — the odds printed in the
+        // text are the odds drawn on the picture.
+        const alert = {
           market: 'crypto',
           symbol,
           kind: signal.kind,
@@ -205,10 +209,13 @@ async function scanCrypto() {
           plan,
           signal,
           chartTitle: `${symbol} — ${signal.label}${rareTier ? ' + confluence (RARE)' : ''} [${signal.direction === 'short' ? 'SHORT' : 'LONG'}]${provisional ? ' (provisional)' : ''}`,
-          text: formatCryptoAlert({
-            symbol, signal, plan, news, conviction, provisional, rareTier, position, stats, regime, why,
-          }),
+        };
+        alert.forecast = buildForecastForAlert(alert);
+        alert.text = formatCryptoAlert({
+          symbol, signal, plan, news, conviction, provisional, rareTier, position, stats, regime, why,
+          forecastMeta: alert.forecast?.metadata || null,
         });
+        alerts.push(alert);
       }
     } catch (err) {
       console.error(`[cryptoJob] ${symbol} failed:`, err.message);

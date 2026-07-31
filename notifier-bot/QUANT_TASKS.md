@@ -37,8 +37,9 @@ improvement candidate · ⏳ needs product decision
       (smoke test, `node src/forecast/engine.test.js`), `src/chart.js`
       (Lightweight Charts v4.2.0 renderer, vendored at
       `src/chart/vendor/lightweight-charts.standalone.production.js`, inlined —
-      the rendered page makes no network request), `src/deliverAlert.js`
-      (`buildForecastForAlert`, seeded `djb2(symbol|kind|YYYY-MM-DD)`).
+      the rendered page makes no network request), `src/forecast/input.js`
+      (`buildForecastForAlert`, seeded `djb2(symbol|kind|YYYY-MM-DD)` — lived in
+      `src/deliverAlert.js` until the one-message change below moved it).
       Draws 12 projected candles after the last real one: translucent second
       candlestick series + ATR·√i confidence cone + dashed path + boundary
       divider + "FORECAST ⟶" chip + TP/SL hit probabilities from a 200-path
@@ -50,6 +51,35 @@ improvement candidate · ⏳ needs product decision
       `forecast: null`); the stock path is unchanged.
       Check: `node src/forecast/engine.test.js` all-pass; sample render
       `/tmp/forecast-sample.png`.
+- [x] **One-message alerts (photo + caption + buttons)** — every push is now a
+      single Telegram message instead of photo-then-text. `src/deliverAlert.js`
+      calls `sendPhoto(png, caption, { replyMarkup: keyboardFor(alertId) })`;
+      the separate `sendMessage` survives only as the render-failure fallback,
+      so a chart error degrades to text-only instead of dropping the alert.
+      Forecast construction moved out of `deliverAlert.js` into
+      `src/forecast/input.js` (`buildForecastForAlert`) and is now called from
+      `cryptoJob.js`, so the alert object carries `forecast` end-to-end and the
+      chart and the caption read the same projection.
+      Check: format smoke prints 416 chars (limit 1024); render smoke writes a
+      30 KB PNG; `env TELEGRAM_BOT_TOKEN= node src/cryptoJob.js` scans 12/12.
+- [x] **Simplified alert text** (`src/format.js`) — the caption limit is 1024
+      chars, so the message was cut to what changes a decision. Removed: the
+      `vs entry acak … rank #x/y` sub-line (the edge-vs-random figure still
+      reaches the message via the "Kenapa" line), the `⏱ Exit:` reminder, the
+      four-row `⚙️ Position plan` block (now one `Max aman Nx → pakai Mx` line;
+      `position.warnings` still print), the regime `(+0.23R di regime ini, n=…)`
+      parenthetical. News capped at 2 items. Added: `🎯 TP x% · SL y% · ~n bar
+      ke TP` from the forecast ensemble metadata (`forecastMeta` param).
+- [x] **Daily BTC bias job (08:00 WIB)** — `src/dailyBias.js`, one context
+      message per day: regime, 1D/4H structure bias (+ ⚠️ konflik when they
+      disagree), close, 7d/30d change, distance to 200SMA, and a per-regime
+      one-liner. Context framing only, never an entry. `sendMessage` only — no
+      `getUpdates`, which would steal callbacks from the tracking poller on the
+      shared bot token. Cron:
+      ```
+      0 1 * * * cd /home/ubuntu/code/quant-notifier/notifier-bot && /usr/bin/node src/dailyBias.js >> /home/ubuntu/quant-logs/quant-bias.log 2>&1
+      ```
+      Check: live run exits 0 and the message landed in topic 662.
 
 ## 🔬 Quant improvement candidates — 2026-07-31 sweep (Binance, 12 pairs, 730d, cost 0.25%, hold 2)
 
