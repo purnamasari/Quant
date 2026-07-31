@@ -19,6 +19,8 @@ const { getCryptoNews } = require('../news');
 const { statsFor } = require('../signalStats');
 const cryptoUniverse = require('../crypto/universe');
 const { etToUtc } = require('../time');
+const { generateForecast } = require('../forecast/engine');
+const { djb2 } = require('../forecast/input');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const LIVE_TTL_MS = 5 * 60 * 1000;
@@ -189,6 +191,27 @@ async function tokenDetail(symbol) {
   const capTier = cryptoUniverse.DEFAULT_VALIDATION_UNIVERSE.includes(symbol) ? 'bigcap' : 'midcap';
   const signals = recentSignals({ days: 90 }).filter((s) => s.symbol === symbol);
   const funding = await getFundingRate(symbol).catch(() => null);
+  let forecast = null;
+
+  try {
+    const lastClose = candles[candles.length - 1].close;
+    const a = require('../risk').atr(candles, 14) || lastClose * 0.02;
+    const latestDirection = signals.length && signals[signals.length - 1].direction;
+    const direction = latestDirection === 'short' || latestDirection === 'long' ? latestDirection : 'long';
+    const sign = direction === 'long' ? 1 : -1;
+    forecast = generateForecast({
+      candles: candles.slice(-60),
+      direction,
+      takeProfit: lastClose + sign * 2 * a,
+      stopLoss: lastClose - sign * 2 * a,
+      entry: lastClose,
+      regime: null,
+      candleCount: 7,
+      seed: djb2('dash|' + symbol + '|' + new Date().toISOString().slice(0, 10)),
+    });
+  } catch (err) {
+    console.log(`[dashboard] forecast failed: ${err.message}`);
+  }
 
   return {
     symbol,
@@ -200,6 +223,10 @@ async function tokenDetail(symbol) {
     fundingRate: funding?.fundingRate != null ? Number(funding.fundingRate) : null,
     // Enough points to draw a sparkline without shipping 300 candles.
     spark: candles.slice(-60).map((c) => c.close),
+    candles: candles.slice(-60).map((c) => ({
+      time: c.time, open: c.open, high: c.high, low: c.low, close: c.close,
+    })),
+    forecast,
     signals: signals.slice().reverse().slice(0, 20),
     stats: statsFor({ kind: 'cup-forming', rareTier: true, capTier }),
   };

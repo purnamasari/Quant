@@ -23,9 +23,9 @@
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    /* Top padding 48px (mt-12): the Telegram Mini App header overlaps the top
+    /* Top padding 40px (mt-10): the Telegram Mini App header overlaps the top
        of the page in some clients, cutting off the title/tabs. */
-    margin: 0; padding: 48px 12px calc(28px + env(safe-area-inset-bottom));
+    margin: 0; padding: 40px 12px calc(28px + env(safe-area-inset-bottom));
     background: var(--bg); color: var(--text);
     font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
@@ -80,6 +80,8 @@
   .err { background: #3a1512; color: #ffb4ae; border-radius: var(--r); padding: 12px; font-size: 13px; }
   .back { background: none; border: none; color: var(--accent); font-size: 14px; padding: 6px 0; cursor: pointer; }
   svg.spark { width: 100%; height: 46px; display: block; margin-top: 8px; }
+  .tchart { width: 100%; height: 220px; margin-top: 8px; }
+  .forecast-note { color: var(--muted); font-size: 11px; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -88,6 +90,7 @@
   <div class="tabs" role="tablist" id="tabs"></div>
   <div id="root"></div>
 
+<script src="/vendor/lightweight-charts.standalone.production.js"></script>
 <script>
 (function () {
   var tg = window.Telegram && window.Telegram.WebApp;
@@ -95,7 +98,7 @@
 
   var root = document.getElementById('root');
   var sub = document.getElementById('sub');
-  var S = null, view = 'summary', token = null, timer = null;
+  var S = null, view = 'summary', token = null, timer = null, tokenChart = null;
 
   var TABS = [
     ['summary', 'Ringkasan'], ['regime', 'Regime'], ['flow', 'Money flow'],
@@ -299,7 +302,7 @@
       '<div class="card"><div class="top"><span class="sym">' + esc(t.symbol) + '</span>' +
       '<span class="pill ' + (t.rareTierEligible ? 'high' : 'medium') + '">' +
       esc(t.capTier) + (t.rareTierEligible ? ' · rare ok' : '') + '</span></div>' +
-      sparkline(t.spark) +
+      '<div class="tchart" id="token-chart"></div><div class="forecast-note" id="forecast-note"></div>' +
       '<div class="metrics"><div><div class="k">harga</div><div class="v">' + esc(t.last) + '</div></div>' +
       '<div><div class="k">7 hari</div><div class="v ' + cls(t.change7d) + '">' + sign(t.change7d, 1) + '%</div></div>' +
       '<div><div class="k">30 hari</div><div class="v ' + cls(t.change30d) + '">' + sign(t.change30d, 1) + '%</div></div></div>' +
@@ -325,14 +328,60 @@
     });
   }
 
+  function renderTokenChart(t) {
+    if (tokenChart) { tokenChart.remove(); tokenChart = null; }
+    var el = document.getElementById('token-chart');
+    if (!el || !window.LightweightCharts || !t.candles || t.candles.length < 2) return;
+
+    var LC = window.LightweightCharts;
+    var chart = LC.createChart(el, {
+      layout: { background: { color: 'transparent' }, textColor: '#8c8f97', fontSize: 11, attributionLogo: false },
+      grid: { vertLines: { color: 'rgba(255,255,255,0.04)' }, horzLines: { color: 'rgba(255,255,255,0.04)' } },
+      rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false }, autoSize: true
+    });
+    var real = chart.addCandlestickSeries({
+      upColor: '#35c46b', downColor: '#ff5f56', borderVisible: false,
+      wickUpColor: '#35c46b', wickDownColor: '#ff5f56'
+    });
+    real.setData(t.candles);
+
+    if (t.forecast && t.forecast.candles && t.forecast.candles.length) {
+      var cone = chart.addAreaSeries({
+        lineColor: 'rgba(0,180,255,0)', topColor: 'rgba(0,180,255,0.08)',
+        bottomColor: 'rgba(0,180,255,0.02)', lineWidth: 0
+      });
+      cone.setData((t.forecast.cone || []).map(function (c) { return { time: c.time, value: c.upper }; }));
+      var projected = chart.addCandlestickSeries({
+        upColor: 'rgba(0,180,255,0.35)', downColor: 'rgba(255,120,120,0.35)', borderVisible: false,
+        wickUpColor: 'rgba(0,180,255,0.35)', wickDownColor: 'rgba(255,120,120,0.35)'
+      });
+      projected.setData(t.forecast.candles.map(function (c) {
+        return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close };
+      }));
+      var path = chart.addLineSeries({
+        color: 'rgba(0,180,255,0.6)', lineStyle: 2, lineWidth: 1,
+        lastValueVisible: false, priceLineVisible: false
+      });
+      path.setData(t.forecast.candles.map(function (c) { return { time: c.time, value: c.close }; }));
+      var m = t.forecast.metadata || {}, note = document.getElementById('forecast-note');
+      if (note) note.textContent = '🎯 TP ~' + Math.round((m.tpHitProbability || 0) * 100) +
+        '% · SL ~' + Math.round((m.slHitProbability || 0) * 100) + '% · ~' +
+        (m.barsToTp == null ? '—' : Math.round(m.barsToTp)) + ' bar ke TP';
+    }
+    chart.timeScale().fitContent();
+    tokenChart = chart;
+  }
+
   function render() {
     if (!S) return;
+    if (tokenChart) { tokenChart.remove(); tokenChart = null; }
     root.innerHTML = (VIEWS[view] || vSummary)();
     Array.prototype.forEach.call(document.querySelectorAll('[data-token]'), function (el) {
       el.addEventListener('click', function () { openToken(el.dataset.token); });
     });
     var back = document.getElementById('back');
     if (back) back.addEventListener('click', function () { view = 'signals'; token = null; render(); });
+    if (view === 'token' && token && !token.error) renderTokenChart(token);
     if (timer) clearInterval(timer);
     if (document.querySelector('[data-cd]')) timer = setInterval(tickCountdowns, 1000);
   }

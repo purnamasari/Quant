@@ -169,6 +169,7 @@ vol 1.74→1.89). **Status: ⏳ keep conservative until live fill data exists.**
 - [x] **Mini App dashboard — DEPLOYED 2026-07-31** —
       `https://quant.dev.heydewi.com` (Caddy HTTPS + systemd
       `quant-dashboard.service`, port 8787, `DASHBOARD_REQUIRE_AUTH` on).
+      Token chart now uses lightweight-charts + forecast projection (2026-07-31).
       Next: BotFather menu button (see DEPLOY.md §8).
 - [ ] **Weekly scoreboard refresh** — `npm run scoreboard` /
       `npm run scoreboard:regime` after threshold changes land.
