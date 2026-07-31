@@ -23,7 +23,9 @@
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    margin: 0; padding: 10px 12px calc(28px + env(safe-area-inset-bottom));
+    /* Top padding 48px (mt-12): the Telegram Mini App header overlaps the top
+       of the page in some clients, cutting off the title/tabs. */
+    margin: 0; padding: 48px 12px calc(28px + env(safe-area-inset-bottom));
     background: var(--bg); color: var(--text);
     font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
