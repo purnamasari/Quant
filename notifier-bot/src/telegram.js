@@ -73,6 +73,49 @@ async function sendPhoto(photoBuffer, caption, { replyMarkup, attempt = 1 } = {}
   }
 }
 
+// Sends several photos as ONE album (media group). Telegram renders them side
+// by side and shows the caption only on the first photo. Used by the Monday
+// daily-bias message, which carries both the weekly (1D) and intraday (4H)
+// forecast charts in a single message.
+async function sendMediaGroup(photos, caption, { attempt = 1 } = {}) {
+  if (!config.telegramBotToken || !config.telegramChatId) {
+    console.warn('[telegram] missing TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID, skipping album send');
+    return { ok: false, skipped: true };
+  }
+  try {
+    const form = new FormData();
+    form.append('chat_id', config.telegramChatId);
+    if (config.telegramThreadId) form.append('message_thread_id', config.telegramThreadId);
+    // Each photo is attached under its own field (photo0, photo1, ...) and
+    // referenced from the media array as attach://photoN.
+    const media = photos.map((p, i) => {
+      const item = { type: 'photo', media: `attach://photo${i}` };
+      if (i === 0 && caption) {
+        item.caption = caption;
+        item.parse_mode = 'HTML';
+      }
+      return item;
+    });
+    form.append('media', JSON.stringify(media));
+    photos.forEach((p, i) => {
+      form.append(`photo${i}`, new Blob([p], { type: 'image/png' }), `chart${i}.png`);
+    });
+
+    const res = await fetch(apiUrl('sendMediaGroup'), { method: 'POST', body: form });
+    const json = await res.json();
+    if (!json.ok) console.error('[telegram] sendMediaGroup failed:', json);
+    return json;
+  } catch (err) {
+    if (attempt < 3) {
+      console.warn(`[telegram] sendMediaGroup attempt ${attempt} failed (${err.message}), retrying...`);
+      await sleep(1500 * attempt);
+      return sendMediaGroup(photos, caption, { attempt: attempt + 1 });
+    }
+    console.error(`[telegram] sendMediaGroup failed after ${attempt} attempts:`, err.message);
+    return { ok: false, error: err.message };
+  }
+}
+
 // Long-poll-style single fetch (not a persistent loop) — the bot is a
 // cron job, not a server, so this is called once at the start of each
 // run to pick up any button presses (callback_query) since the last
@@ -106,4 +149,4 @@ async function answerCallbackQuery(callbackQueryId, text) {
   }
 }
 
-module.exports = { sendMessage, sendPhoto, getUpdates, answerCallbackQuery };
+module.exports = { sendMessage, sendPhoto, sendMediaGroup, getUpdates, answerCallbackQuery };

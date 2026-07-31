@@ -3,10 +3,10 @@
 // and silence reads identically to "nothing was checked" — this is the standing
 // answer to "what is the market doing today".
 //
-// One message per day: caption + one chart. The chart follows a weekday cadence
-// — Monday (WIB) charts 1D candles with a 7-candle forecast (the week ahead),
-// Tuesday–Sunday chart 4H candles with a 12-candle forecast (the day ahead).
-// The caption reports both the 1D and 4H bias every day either way.
+// One message per day: caption + chart(s). Monday (WIB) sends BOTH the weekly
+// 1D chart (7-candle forecast) and the intraday 4H chart (12-candle forecast)
+// as a single album; Tuesday–Sunday send the 4H chart alone. The caption
+// reports both the 1D and 4H bias every day either way.
 //
 // Worded as context, never as an entry, for the same reason as
 // formatStructureAlert: BTC structure breaks measured indistinguishable from
@@ -16,7 +16,7 @@
 // sendMessage only — no getUpdates. The bot token is shared with the tracking
 // poller, and a second consumer of getUpdates would steal its callbacks.
 
-const { sendMessage, sendPhoto } = require('./telegram');
+const { sendMessage, sendPhoto, sendMediaGroup } = require('./telegram');
 const { getCandles } = require('./crypto/binance');
 const { marketStructure } = require('./marketStructure');
 const { classifyLatest, REGIME_LABEL, REGIME_EMOJI } = require('./regime');
@@ -85,28 +85,30 @@ function isMondayWib(date = new Date()) {
   return date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'Asia/Jakarta' }) === 'Mon';
 }
 
-// Picks which timeframe gets charted today, plus the levels the projection aims
-// at. Context levels, not a trade plan: ±2 ATR around the close in and against
-// the standing bias, so the footer probability answers "does this bias hold for
-// the next N candles", not "should I buy".
-function selectChartPayload({ daily, h4, dStruct, fourHour, regime }) {
-  const monday = isMondayWib();
-  const candles = monday ? daily : h4;
-  const bias = monday ? dStruct.bias : fourHour.bias;
+// Picks a timeframe's payload for the projection — levels, direction, forecast
+// length — plus the chart title. Context levels, not a trade plan: ±2 ATR
+// around the close in and against the standing bias, so the footer probability
+// answers "does this bias hold for the next N candles", not "should I buy".
+// `useDaily: true` → 1D weekly outlook (7 candles), `false` → 4H intraday
+// outlook (12 candles).
+function payloadFor({ daily, h4, dStruct, fourHour, regime, useDaily }) {
+  const candles = useDaily ? daily : h4;
+  const bias = useDaily ? dStruct.bias : fourHour.bias;
   const lastClose = candles[candles.length - 1].close;
-  const atrValue = (monday ? atr(daily, 14) : atr(h4, 14)) || lastClose * 0.02;
+  const atrValue = (useDaily ? atr(daily, 14) : atr(h4, 14)) || lastClose * 0.02;
   const direction = (bias === 'bearish' || (!bias && regime === 'bear')) ? 'short' : 'long';
   const sign = direction === 'long' ? 1 : -1;
   return {
-    monday,
+    useDaily,
     candles,
     bias,
     lastClose,
     atrValue,
     direction,
     sign,
-    candleCount: monday ? 7 : 12,
-    label: monday ? '1D' : '4H',
+    candleCount: useDaily ? 7 : 12,
+    label: useDaily ? '1D' : '4H',
+    title: `BTCUSDT — Bias ${useDaily ? '1D (weekly)' : '4H (intraday)'} ${wibDate()}`,
   };
 }
 
@@ -152,8 +154,9 @@ async function renderImage({ candles, forecast, lastClose, atrValue, sign, title
 }
 
 // The text always reports BOTH biases — only the chart follows the weekday
-// cadence, so `chartLabel` just labels which timeframe the 🎯 line describes.
-function buildMessage({ regime, daily, fourHour, candles, forecast = null, chartLabel = '1D', chartCount = 7 }) {
+// cadence. `forecastLines` are the 🎯 lines (already formatted, without the
+// emoji); Monday contributes two (1D + 4H), other days one.
+function buildMessage({ regime, daily, fourHour, candles, forecastLines = [] }) {
   const lastClose = candles[candles.length - 1].close;
   const sma200 = sma(candles, 200);
   const vsSma = sma200 ? ((lastClose - sma200) / sma200) * 100 : null;
@@ -169,10 +172,7 @@ function buildMessage({ regime, daily, fourHour, candles, forecast = null, chart
     ` · 30d ${signed(changePercent(candles, 30))} · vs 200SMA ${signed(vsSma)}`,
     '',
     `📌 ${REGIME_NOTE[regime] || 'Tidak ada bias jelas hari ini.'}`,
-    ...(forecast ? [
-      `🎯 Forecast ${chartLabel} (${chartCount} lilin): bias bertahan ~${Math.round(forecast.metadata.tpHitProbability * 100)}%` +
-      ` · gagal ~${Math.round(forecast.metadata.slHitProbability * 100)}%`,
-    ] : []),
+    ...forecastLines.map((line) => `🎯 ${line}`),
     '<i>Regime = posisi harga vs 200SMA + slope. Bias = arah break struktur terakhir. ' +
     'Ini konteks, bukan sinyal entry.</i>',
   ].join('\n');
@@ -188,26 +188,40 @@ async function main() {
     });
     const regime = classifyLatest(daily);
 
-    // Monday = weekly outlook off the 1D series, other days = intraday off 4H.
-    const chart = selectChartPayload({ daily, h4, dStruct, fourHour, regime });
-    const { forecast } = buildForecast({ ...chart, regime });
+    // Monday = BOTH the weekly (1D) and intraday (4H) outlook as one album;
+    // other days = intraday (4H) only.
+    const monday = isMondayWib();
+    const payloads = monday
+      ? [
+        payloadFor({ daily, h4, dStruct, fourHour, regime, useDaily: true }),
+        payloadFor({ daily, h4, dStruct, fourHour, regime, useDaily: false }),
+      ]
+      : [payloadFor({ daily, h4, dStruct, fourHour, regime, useDaily: false })];
 
-    const text = buildMessage({
-      regime, daily: dStruct, fourHour, candles: daily, forecast,
-      chartLabel: chart.label, chartCount: chart.candleCount,
-    });
+    const forecasts = payloads.map((p) => buildForecast({ ...p, regime }));
+    const forecastLines = payloads
+      .map((p, i) => {
+        const f = forecasts[i].forecast;
+        if (!f) return null;
+        return `${p.label} (${p.candleCount} lilin): bias bertahan ~${Math.round(f.metadata.tpHitProbability * 100)}% · gagal ~${Math.round(f.metadata.slHitProbability * 100)}%`;
+      })
+      .filter(Boolean);
+
+    const text = buildMessage({ regime, daily: dStruct, fourHour, candles: daily, forecastLines });
     console.log(text);
 
-    const png = await renderImage({
-      ...chart,
-      forecast,
-      title: `BTCUSDT — Bias ${chart.label} ${chart.monday ? '(weekly)' : '(intraday)'} ${wibDate()}`,
-    });
-    // Exactly one message: photo when the chart rendered, plain text otherwise.
-    if (png) await sendPhoto(png, text);
+    const pngs = [];
+    for (let i = 0; i < payloads.length; i++) {
+      const png = await renderImage({ ...payloads[i], forecast: forecasts[i].forecast });
+      if (png) pngs.push(png);
+    }
+    // Exactly one outbound message: an album when both charts rendered on
+    // Monday, a single photo when only one did, plain text when none did.
+    if (monday && pngs.length === 2) await sendMediaGroup(pngs, text);
+    else if (pngs.length === 1) await sendPhoto(pngs[0], text);
     else await sendMessage(text);
 
-    console.log(`[dailyBias] sent — regime ${regime ?? 'unknown'}, 1D ${dStruct.bias ?? 'unknown'}, 4H ${fourHour.bias ?? 'unknown'}, chart ${chart.label} (${chart.candleCount} lilin) ${png ? 'yes' : 'no'}`);
+    console.log(`[dailyBias] sent — regime ${regime ?? 'unknown'}, 1D ${dStruct.bias ?? 'unknown'}, 4H ${fourHour.bias ?? 'unknown'}, chart ${monday ? '1D+4H (album)' : '4H'} ${pngs.length ? 'yes' : 'no'}`);
   } catch (err) {
     console.error('[dailyBias] failed:', err.message);
     process.exit(1);
@@ -224,6 +238,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  main, buildMessage, buildForecast, renderImage, selectChartPayload,
+  main, buildMessage, buildForecast, renderImage, payloadFor,
   todayYmd, isMondayWib, sma, changePercent,
 };
