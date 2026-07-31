@@ -177,7 +177,12 @@ rare tier's spectacular sideways cell (+2.11R, 92.5% WR) is **refused** by guard
   Do not quote the cup-forming gate as validated; it is a hypothesis kept
   live deliberately to accumulate fresh evidence (see
   `data/binance-revalidation-2026-07-31.md` §7).** A gated kind does **not**
-  fire when the regime is unavailable.
+  fire when the regime is unavailable. Thresholds for volume-surge (**2.5×**
+  the 20-day average volume, `config.volumeSurgeRatio`) and near-52w-high
+  (**within 2%** of the one-year high, `config.nearHighPercent`) are the
+  post-sweep values from 2026-07-31 (stock defaults stay 1.75× / 4%), and a
+  same-day confluence of ≥2 of the three unconditional kinds boosts conviction
+  one tier, capped at HIGH (`QUANT_TASKS.md` §1-3).
 - **Rare high-conviction tier** (reachable again, but only where cup-forming
   is: bear/sideways): cup-forming plus same-day
   confluence with ≥2 validated kinds, 7-day hold. 0.497R / 67.8% on the original 12-pair

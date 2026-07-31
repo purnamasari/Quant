@@ -15,12 +15,14 @@ const { detectStockSignals } = require('./signals');
 const { getChart } = require('./yahoo');
 const { getUniverse } = require('./universe');
 
-function walkForwardOccurrences(candles, minHistory = 55) {
+// opts is forwarded verbatim to detectStockSignals so a backtest can measure
+// the same thresholds the live caller uses (see src/crypto/backtest.js).
+function walkForwardOccurrences(candles, minHistory = 55, opts = {}) {
   // occurrences[kind] = array of { index, score, direction }
   const occurrences = {};
   for (let i = minHistory; i < candles.length; i++) {
     const window = candles.slice(0, i + 1);
-    const { signals } = detectStockSignals(window);
+    const { signals } = detectStockSignals(window, opts);
     for (const s of signals) {
       if (!occurrences[s.kind]) occurrences[s.kind] = [];
       occurrences[s.kind].push({ index: i, score: s.score, direction: s.direction || 'long' });

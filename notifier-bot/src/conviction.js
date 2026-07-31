@@ -65,20 +65,29 @@ function regimeAdjustment(strategyKey, regime) {
 // `strategyKey` defaults to the kind but can be overridden — the rare tier is
 // measured under its own name, not under plain 'cup-forming', and must not
 // borrow another row's evidence.
-function convictionFor(market, kind, { regime = null, strategyKey = null } = {}) {
+// `boost` is an extra promotion in tier steps from evidence outside this
+// table — currently same-day confluence among the unconditional crypto kinds
+// (src/cryptoJob.js). It runs through the same capped `step`, so confluence
+// can reach 'high' but never manufactures a very-high, for the same reason
+// regime can't (see MAX_PROMOTED_TIER).
+function convictionFor(market, kind, { regime = null, strategyKey = null, boost = 0 } = {}) {
   const entry = TABLE[market]?.[kind] || TABLE.default;
   const baseTier = entry.tier;
   const cell = regimeAdjustment(strategyKey || kind, regime);
 
-  const tier = cell ? step(baseTier, cell.adjust) : baseTier;
+  const regimeTier = cell ? step(baseTier, cell.adjust) : baseTier;
+  const tier = boost > 0 ? step(regimeTier, boost) : regimeTier;
   return {
     tier,
     baseTier,
+    boost,
     label: TIER_LABEL[tier] || 'LOW',
     emoji: TIER_EMOJI[tier] || '▫️',
     reason: entry.reason,
     regime,
-    regimeAdjusted: tier !== baseTier,
+    // Regime-only: a confluence boost must not make callers claim regime
+    // evidence they don't have (whyFactors reads regimeEvidence off this).
+    regimeAdjusted: regimeTier !== baseTier,
     regimeEvidence: cell
       ? {
         adjust: cell.adjust,

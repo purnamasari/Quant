@@ -80,7 +80,12 @@ function buildSignalMetrics(candles) {
   };
 }
 
-function detectStockSignals(candles) {
+// opts lets a caller override the two thresholds the 2026-07-31 crypto sweep
+// re-tuned. Defaults are the original stock-calibrated values, so stock
+// callers and the analysis scripts behave exactly as before.
+function detectStockSignals(candles, opts = {}) {
+  const nearHighPercent = opts.nearHighPercent ?? 4;
+  const volumeSurgeRatio = opts.volumeSurgeRatio ?? 1.75;
   const clean = candles.filter((c) => c.close > 0).slice(-252);
   const metrics = buildSignalMetrics(clean);
   const signals = [];
@@ -108,11 +113,11 @@ function detectStockSignals(candles) {
 
   if (metrics.high252 && latest.close >= metrics.high252 * 0.995) {
     push(signals, 'new-52w-high', '52W high', 17, 'Latest close is effectively at a one-year high.');
-  } else if (metrics.distanceToHighPercent !== null && metrics.distanceToHighPercent <= 4) {
+  } else if (metrics.distanceToHighPercent !== null && metrics.distanceToHighPercent <= nearHighPercent) {
     push(signals, 'near-52w-high', 'Near 52W high', 12, `Within ${metrics.distanceToHighPercent}% of the one-year high.`);
   }
 
-  if (metrics.volumeRatio20 !== null && metrics.volumeRatio20 >= 1.75 && prev && latest.close > prev.close) {
+  if (metrics.volumeRatio20 !== null && metrics.volumeRatio20 >= volumeSurgeRatio && prev && latest.close > prev.close) {
     push(signals, 'volume-surge', 'Volume surge', 13, `Volume is ${metrics.volumeRatio20}x the 20-day average on an up close.`, 'hot');
   }
 
@@ -246,7 +251,7 @@ function detectStockSignals(candles) {
     push(signals, 'near-52w-low', 'Near 52W low', 12, `Within ${metrics.distanceToLowPercent}% of the one-year low.`, 'bearish', 'short');
   }
 
-  if (metrics.volumeRatio20 !== null && metrics.volumeRatio20 >= 1.75 && prev && latest.close < prev.close) {
+  if (metrics.volumeRatio20 !== null && metrics.volumeRatio20 >= volumeSurgeRatio && prev && latest.close < prev.close) {
     push(signals, 'volume-surge-down', 'Volume surge (down)', 13, `Volume is ${metrics.volumeRatio20}x the 20-day average on a down close.`, 'hot', 'short');
   }
 

@@ -60,6 +60,11 @@ const { checkProtections } = require('./protections');
 // alerted, while confluence here just measures how much agreed on the day.
 const CONFLUENCE_PARTNER_KINDS = ['ma-alignment', 'near-52w-high', 'volume-surge', 'cup-forming', 'bos-bullish'];
 
+// Same-day agreement among the 3 unconditional kinds is itself an edge
+// (quant sweep 2026-07-31: >=2 kinds same day +2.79% vs singles +0.58%,
+// stable both halves — QUANT_TASKS.md §3). Boosts conviction one tier.
+const UNCONDITIONAL_KINDS = ['ma-alignment', 'near-52w-high', 'volume-surge'];
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -78,7 +83,9 @@ function relativeVolume(candles) {
 
 // The strongest contributing factors, strongest first, for the "why" line.
 // Only facts that are measured somewhere — no adjectives invented at send time.
-function whyFactors({ stats, conviction, regime, confluenceCount, relVol, news, rareTier }) {
+function whyFactors({
+  stats, conviction, regime, confluenceCount, relVol, news, rareTier, uncondConfluence = 0,
+}) {
   const out = [];
   // Recomputed from the same tier-scoped numbers the stats block prints, NOT
   // from stats.beatsRandom, which is measured against the all-pairs baseline.
@@ -91,6 +98,7 @@ function whyFactors({ stats, conviction, regime, confluenceCount, relVol, news, 
   if (rareTier || confluenceCount >= 2) {
     out.push(`${confluenceCount} sinyal tervalidasi barengan hari ini`);
   }
+  if (uncondConfluence >= 2) out.push(`⚡ ${uncondConfluence} sinyal utama barengan hari ini (confluence historis +2.79% cost-adj)`);
   if (conviction?.regimeAdjusted) {
     out.push(`regime ${regime} historisnya ${conviction.regimeEvidence.adjust > 0 ? 'mendukung' : 'melawan'} strategi ini (n=${conviction.regimeEvidence.n})`);
   }
@@ -145,6 +153,8 @@ async function scanCrypto() {
 
       const confluenceCount = signals.filter((s) => CONFLUENCE_PARTNER_KINDS.includes(s.kind)).length;
       const rareTierEligible = cryptoUniverse.RARE_TIER_UNIVERSE.includes(symbol) && confluenceCount >= 2;
+      const uncondCount = signals.filter((s) => UNCONDITIONAL_KINDS.includes(s.kind)).length;
+      const confluenceBoost = uncondCount >= 2 ? 1 : 0;
 
       const plan = riskPlanFor(candles);
       const coinName = symbol.replace(/-USDT-SWAP$/, '').replace(/-USDT$/, '').replace(/USDT$/, '');
@@ -162,6 +172,9 @@ async function scanCrypto() {
         const conviction = convictionFor('crypto', rareTier ? 'cup-forming-confluence' : signal.kind, {
           regime,
           strategyKey,
+          // The rare tier's own measurement already prices confluence in —
+          // boosting it again would double-count the same evidence.
+          boost: rareTier ? 0 : confluenceBoost,
         });
         const capTier = cryptoUniverse.DEFAULT_VALIDATION_UNIVERSE.includes(symbol) ? 'bigcap' : 'midcap';
         const stats = statsFor({ kind: signal.kind, rareTier, capTier });
@@ -172,7 +185,7 @@ async function scanCrypto() {
           fundingRate: funding?.fundingRate,
         });
         const why = whyFactors({
-          stats, conviction, regime, confluenceCount, relVol, news, rareTier,
+          stats, conviction, regime, confluenceCount, relVol, news, rareTier, uncondConfluence: uncondCount,
         });
 
         alerts.push({

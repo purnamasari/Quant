@@ -8,11 +8,16 @@
 // crypto-only signal is added: extreme perpetual funding rate, which has
 // no stock equivalent (closest analogue is short interest).
 const { detectStockSignals } = require('../stock/signals');
+const config = require('../config');
 
 const FUNDING_EXTREME_THRESHOLD = 0.0005; // 0.05% per 8h ~ over 3x typical BTC funding
 
 function detectCryptoSignals(candles, fundingRate) {
-  const { signals, metrics } = detectStockSignals(candles);
+  // Crypto uses the post-sweep thresholds (2026-07-31), not the stock defaults.
+  const { signals, metrics } = detectStockSignals(candles, {
+    volumeSurgeRatio: config.volumeSurgeRatio,
+    nearHighPercent: config.nearHighPercent,
+  });
   if (fundingRate && Number.isFinite(fundingRate.fundingRate)) {
     const rate = fundingRate.fundingRate;
     if (Math.abs(rate) >= FUNDING_EXTREME_THRESHOLD) {

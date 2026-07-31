@@ -11,6 +11,7 @@
 const { walkForwardOccurrences, forwardReturn, summarize } = require('../stock/backtest');
 const { getDailyCandles } = require('./binance');
 const { getUniverse } = require('./universe');
+const config = require('../config');
 
 async function runCryptoBacktest({ days = 730, holdDays = 2, symbols = null, log = console.log, costPercent = 0 } = {}) {
   const universe = symbols || getUniverse();
@@ -38,7 +39,12 @@ async function runCryptoBacktest({ days = 730, holdDays = 2, symbols = null, log
     symbolsUsed += 1;
     await new Promise((r) => setTimeout(r, 400)); // avoid OKX rate limiting across a long symbol list
 
-    const occurrences = walkForwardOccurrences(candles);
+    // Same thresholds the live crypto scan uses, so this backtest measures
+    // what actually ships rather than the stock-calibrated defaults.
+    const occurrences = walkForwardOccurrences(candles, 55, {
+      volumeSurgeRatio: config.volumeSurgeRatio,
+      nearHighPercent: config.nearHighPercent,
+    });
     for (const [kind, hits] of Object.entries(occurrences)) {
       if (!perKindReturns[kind]) perKindReturns[kind] = [];
       for (const hit of hits) {

@@ -115,6 +115,10 @@ module.exports = {
     'cup-forming': ['bear', 'sideways'],
     'bos-bullish': ['sideways'],
   },
+  // Quant sweep 2026-07-31 (Binance, cost 0.25%, stable both halves): tighter
+  // thresholds raise expectancy meaningfully. See QUANT_TASKS.md §1-2.
+  volumeSurgeRatio: Number(process.env.VOLUME_SURGE_RATIO || 2.5),   // base was 1.75 → 2.5: +1.74%→+2.87%
+  nearHighPercent: Number(process.env.NEAR_HIGH_PERCENT || 2),       // base was 4 → 2: +1.49%→+2.36%
   earningsGuardDays: Number(process.env.EARNINGS_GUARD_DAYS || 3),
   // Leveraged position sizing (see src/positionSizing.js). ACCOUNT_SIZE is
   // optional — without it alerts still show max safe leverage and the

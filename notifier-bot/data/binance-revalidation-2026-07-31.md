@@ -11,6 +11,15 @@ methodology below if needed).
 
 ## 1. Pooled universe backtest — 12 scan pairs, 730 days, 2-day hold
 
+> **Note (added 2026-07-31, after the improvement sweep):** the numbers in this
+> section were measured with the **pre-sweep** thresholds — volume-surge at
+> 1.75× the 20-day average volume and near-52w-high at 4% from the one-year
+> high. The improvement sweep the same day (`QUANT_TASKS.md` §1-2) tightened
+> the shipped crypto values to **2.5×** and **2%**, which changes both the
+> trade counts and the expectancies for those two rows (volume-surge 362 →
+> 141 trades, +1.73% → +2.87%; near-52w-high 283 → 100 trades, +1.49% →
+> +2.36%, both cost-adjusted). Everything else here is unaffected.
+
 Same methodology as `npm run backtest:crypto` (walk-forward,
 `forwardReturn`, pooled per kind). Universe: BTC/ETH/SOL/XRP/ZEC/HYPE/DOGE/
 BNB/ADA/NEAR/AAVE/ONDO USDT.
