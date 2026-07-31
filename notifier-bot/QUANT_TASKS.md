@@ -45,7 +45,7 @@ Evidence scripts: `/tmp/improvement-sweep.js`, `/tmp/robustness-check.js`
 Monotonic improvement, positive in both halves. Trade-off: fewer signals
 (141 vs 362). Check: threshold configurable; sweep re-run shows the same
 ordering on fresh data.
-**Status: [x] implemented 2026-07-31 (commit TBD).** `config.volumeSurgeRatio`
+**Status: [x] implemented 2026-07-31 (commit 6df11ed).** `config.volumeSurgeRatio`
 (env `VOLUME_SURGE_RATIO`, default 2.5) is threaded into `detectStockSignals`
 via opts from `crypto/signals.js` and `crypto/backtest.js`. Stock callers pass
 nothing and keep the 1.75 default. Verified: `node src/crypto/backtest.js`
@@ -59,7 +59,7 @@ reports volume-surge n=141, +3.12% raw = **+2.87% at 0.25% cost**.
 | **2%** | **100** | **+2.36%** | +2.30% | +2.52% |
 | 1% | 40 | +2.70% | — | — |
 
-**Status: [x] implemented 2026-07-31 (commit TBD).** `config.nearHighPercent`
+**Status: [x] implemented 2026-07-31 (commit 6df11ed).** `config.nearHighPercent`
 (env `NEAR_HIGH_PERCENT`, default 2), same opts path as §1; stock default stays
 4%. Verified: backtest reports near-52w-high n=100, +2.61% raw = **+2.36% at
 0.25% cost**.
@@ -72,7 +72,7 @@ reports volume-surge n=141, +3.12% raw = **+2.87% at 0.25% cost**.
 
 Confluence ≈ 5× the singles-only expectancy. Suggests a conviction boost
 (or separate quality tier) when multiple unconditional kinds agree.
-**Status: [x] implemented 2026-07-31 (commit TBD)** — surfaced as a conviction
+**Status: [x] implemented 2026-07-31 (commit 6df11ed)** — surfaced as a conviction
 boost, not a new tier. `convictionFor(..., { boost })` promotes one tier
 through the existing capped `step`, so confluence can reach HIGH but never
 manufactures VERY HIGH (that badge stays reserved for a setup measured under
