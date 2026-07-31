@@ -29,6 +29,28 @@ improvement candidate · ⏳ needs product decision
 - [x] **Push to `purnamasari/Quant` branch `notifier-binance`** (6 commits via
       SSH as ashcel). Check: remote HEAD == local HEAD.
 
+## ✅ Chart / UX improvements
+
+- [x] 🔬 **Probabilistic forecast overlay (ForecastEngine + lightweight-charts)**
+      — engine v1 (`FORECAST_ENGINE_VERSION = 1`).
+      Files: `src/forecast/engine.js` (engine), `src/forecast/engine.test.js`
+      (smoke test, `node src/forecast/engine.test.js`), `src/chart.js`
+      (Lightweight Charts v4.2.0 renderer, vendored at
+      `src/chart/vendor/lightweight-charts.standalone.production.js`, inlined —
+      the rendered page makes no network request), `src/deliverAlert.js`
+      (`buildForecastForAlert`, seeded `djb2(symbol|kind|YYYY-MM-DD)`).
+      Draws 12 projected candles after the last real one: translucent second
+      candlestick series + ATR·√i confidence cone + dashed path + boundary
+      divider + "FORECAST ⟶" chip + TP/SL hit probabilities from a 200-path
+      ensemble.
+      ⚠️ **Not a prediction.** The projection is a deterministic seeded random
+      walk shaped by the plan (entry/stop/target, ATR, direction, signal
+      strength) — same alert re-renders byte-identically, and it carries no
+      forecasting skill. Forecast failure degrades to a plain chart (try/catch,
+      `forecast: null`); the stock path is unchanged.
+      Check: `node src/forecast/engine.test.js` all-pass; sample render
+      `/tmp/forecast-sample.png`.
+
 ## 🔬 Quant improvement candidates — 2026-07-31 sweep (Binance, 12 pairs, 730d, cost 0.25%, hold 2)
 
 Evidence scripts: `/tmp/improvement-sweep.js`, `/tmp/robustness-check.js`
