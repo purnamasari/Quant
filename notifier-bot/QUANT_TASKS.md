@@ -80,9 +80,10 @@ improvement candidate · ⏳ needs product decision
       way, and a failed forecast/render degrades to text-only.
       Context framing only, never an entry. `sendMessage` only — no
       `getUpdates`, which would steal callbacks from the tracking poller on the
-      shared bot token. Cron:
+      shared bot token. Cron (server TZ = Asia/Shanghai, UTC+8 — hours are CST,
+      which is what makes this land at 08:00 WIB):
       ```
-      0 1 * * * cd /home/ubuntu/code/quant-notifier/notifier-bot && /usr/bin/node src/dailyBias.js >> /home/ubuntu/quant-logs/quant-bias.log 2>&1
+      0 9 * * * cd /home/ubuntu/code/quant-notifier/notifier-bot && /usr/bin/node src/dailyBias.js >> /home/ubuntu/quant-logs/quant-bias.log 2>&1
       ```
       Check: live run exits 0 and the message landed in topic 662.
 
