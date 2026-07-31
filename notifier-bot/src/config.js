@@ -100,11 +100,17 @@ module.exports = {
   // Regime gates for kinds that are NOT regime-agnostic (2026-07-31 Binance
   // validation): a kind listed here fires only when the live BTC regime is
   // in the allowed list. Empty/missing = always on.
-  //   bos-bullish: sideways only  — the only regime where it clears the
-  //     independence guards (t=2.65); negative in bull AND bear (t=-2.56).
-  //   cup-forming: bear/sideways — its bull cell is flat/negative; the
-  //     bear cell is directionally strong (t=3.81) but fails the month
-  //     independence guards, so it stays gated rather than unconditional.
+  //   bos-bullish: sideways only  — GUARD-BACKED: the only regime where it
+  //     clears the independence guards (t=2.65, 9 months); negative in bull
+  //     AND bear (t=-2.56), so the gate excludes the harmful regimes.
+  //   cup-forming: bear/sideways — EXPLORATORY, NOT validated: its best cell
+  //     (bear, t=3.81) FAILS the independence guards (5 months, 42% of
+  //     trades in one month), its pooled number is negative (-0.24% cost-adj),
+  //     and the rare-tier variant fails the time-stability split (n=0 in the
+  //     most recent 365 days). Shipped deliberately as a low-risk hypothesis
+  //     to accumulate fresh evidence. See
+  //     data/binance-revalidation-2026-07-31.md §4/§7 — do not quote this
+  //     gate as "validated".
   regimeGates: {
     'cup-forming': ['bear', 'sideways'],
     'bos-bullish': ['sideways'],

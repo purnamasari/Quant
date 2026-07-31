@@ -169,12 +169,26 @@ rare tier's spectacular sideways cell (+2.11R, 92.5% WR) is **refused** by guard
   re-validation the same day showed the pooled average was cancelling
   opposite-signed regime cells (bos-bullish sideways t=2.65 vs bull/bear
   t=-2.56; cup-forming strong in bear t=3.81 but month-clustered, flat in
-  bull). A gated kind does **not** fire when the regime is unavailable.
+  bull). **Evidence status differs: the bos-bullish/sideways gate is
+  guard-backed (clears all four independence guards); the cup-forming gate is
+  EXPLORATORY — its bear cell FAILS the independence guards (5 months, 42% of
+  trades in one month), its pooled number is negative, and the rare-tier
+  variant fails the time-stability split (n=0 in the most recent 365 days).
+  Do not quote the cup-forming gate as validated; it is a hypothesis kept
+  live deliberately to accumulate fresh evidence (see
+  `data/binance-revalidation-2026-07-31.md` §7).** A gated kind does **not**
+  fire when the regime is unavailable.
 - **Rare high-conviction tier** (reachable again, but only where cup-forming
   is: bear/sideways): cup-forming plus same-day
   confluence with ≥2 validated kinds, 7-day hold. 0.497R / 67.8% on the original 12-pair
   universe, 0.380R / 63.1% on the current watchlist. Scoped in code to
   `RARE_TIER_UNIVERSE` — scanning a pair does not make it eligible.
+  **2026-07-31 Binance re-validation: NOT re-validated.** Under the shipped
+  exit rule (no-target, 14-day hold) it measures 0.841R / 59.8% / n=97 on the
+  full 730d window — close to the OKX 0.911R — but the time-stability split
+  fails (0 occurrences in the most recent 365 days; every trade sits in the
+  older bull year). The 0.497R / 67.8% number above is an OKX-era target-based
+  measurement and must not be quoted as applying to Binance data.
 
 Note the aggregate is carried by ETH/SOL/BNB; **BTC measured -0.06R on n=37**
 with this filter. That matters because BTC also tolerates the most leverage.

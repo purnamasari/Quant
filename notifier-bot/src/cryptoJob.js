@@ -24,7 +24,11 @@
 // again, but only in the regimes where cup-forming itself is allowed —
 // bear and sideways, per config.regimeGates. In a bull regime cup-forming
 // is filtered out before confluence is even considered, so no rare-tier
-// alert can fire there.)
+// alert can fire there. NOTE: the tier is NOT re-validated on Binance —
+// shipped-exit-rule re-measurement is 0.841R/14d on the full window but
+// the time-stability split yields n=0 in the most recent 365 days, and
+// cup-forming's gate is EXPLORATORY (fails its own independence guards).
+// See data/binance-revalidation-2026-07-31.md §4/§7.)
 
 const config = require('./config');
 const { sendMessage } = require('./telegram');

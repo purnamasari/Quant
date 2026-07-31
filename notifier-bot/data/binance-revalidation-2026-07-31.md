@@ -78,8 +78,31 @@ recent year is not just quieter, several patterns went extinct.
 
 ## 4. Rare tier (cup-forming + confluence ≥2) re-validation
 
-R-multiple sim (ATR×1.5 stop, 1.8R target), RARE_TIER_UNIVERSE (9 bigcap
-pairs), Binance vs the shipped OKX claim:
+Two exit-rule lenses, because the repo quotes different numbers depending on
+which sim you read. Do not mix them.
+
+**a) Shipped exit rule — ATR×1.5 stop, NO fixed target, 14-day hold,
+0.25% cost in R terms** (the `simulate()` in `src/analysis/regimeScoreboard.js`,
+the rule behind `data/strategy-stats.json`):
+
+| scope | n | WR | avgR | t | months | top month |
+|---|---|---|---|---|---|---|
+| RARE 9, full 730d (Binance) | 97 | 59.8% | **0.841R** | 4.14 | 11 | 0.19 |
+| RARE 9, older 365d | 66 | 62.1% | 1.180R | 4.28 | 9 | 0.27 |
+| RARE 9, recent 365d | **0** | — | — | — | — | — |
+| validation-12, full 730d | 108 | 57.4% | 0.769R | 4.01 | 11 | 0.17 |
+| OKX shipped (`strategy-stats.json`) | 102 | 64.7% | 0.911R | — | — | — |
+
+Under the rule that actually ships, the Binance full-window number (0.841R)
+is close to the OKX shipped 0.911R and the full cell even clears the month
+independence guards. **The time-stability split still fails decisively:
+0 occurrences in the most recent 365 days** — every trade sits in the older
+bull year, so the edge is not demonstrated to persist into the current
+market structure.
+
+**b) Target-based sim — ATR×1.5 stop, fixed 1.8R target** (the
+`simulateRMultiple` in `src/analysis/rMultipleBacktest.js`, the rule behind
+the "0.497R / 67.8% / n=118" claim quoted in `cryptoJob.js`):
 
 | metric | OKX shipped | Binance |
 |---|---|---|
@@ -87,10 +110,11 @@ pairs), Binance vs the shipped OKX claim:
 | 10-day hold | 0.662R / 70.1% / n=97 | **0.431R / 59.8% / n=97** |
 | base cup-forming, no confluence (7d) | ~0.087R | 0.039R |
 
-**Stability FAILS:** all 97 trades sit in the older year (2024-08 →
-2025-07, bull run); the recent 365 days produced **n=0** occurrences.
-The rare tier's edge on Binance is entirely a product of one bull year —
-the period-selection trap documented in AGENTS.md.
+Same stability failure: all trades in the older year.
+
+**Net:** the rare tier is not re-validated on Binance in either exit-rule
+lens because the time-stability split yields n=0 for the recent year. It
+remains an *unproven* edge, not a measured one.
 
 ## 5. Regime split with full independence guards
 
@@ -162,3 +186,15 @@ validation showed the pooled averages were cancelling opposite-signed
 regime cells. Gates: cup-forming → bear/sideways only; bos-bullish →
 sideways only. Near-identical expectancy to flat-3 (+0.53% vs +0.55%)
 with 400+ additional trades, and the regime-validated cells are kept.
+
+### ⚠️ Evidence status of the two gates — read before quoting
+
+| gate | evidence status |
+|---|---|
+| **bos-bullish → sideways** | **Guard-backed.** The sideways cell clears all four independence guards (n=406, edge +0.23R, t=2.65, 9 months, top month 0.19). The gate excludes regimes where it measures negative (bull −0.18R; bear t=−2.56, actively harmful). |
+| **cup-forming → bear/sideways** | **EXPLORATORY — NOT validated.** The bear cell (its best) fails the same guards: n=60, edge +0.84R, t=3.81, but only **5 distinct months and 42% of trades in one month** (single-episode pattern — exactly what AGENTS.md's independence guards exist to reject). Its pooled number is negative (−0.24% cost-adj) and the rare-tier variant fails the time-stability split (n=0 in the most recent 365 days, see §4). The gate was shipped as an exploratory, low-risk compromise (it only fires in the two regimes where cup-forming is not clearly bad, and it restores the rare-tier mechanism), **not because cup-forming's edge passed its own guards.** Do NOT cite this gate as "validated" — it is a hypothesis with a weak positive signal, kept live deliberately so it can accumulate fresh evidence. |
+
+If a future agent re-runs validation: the bar for upgrading cup-forming's
+gate to "validated" is the full four-guard pass (n ≥ 30, |t| vs
+same-regime random > 2, ≥ 6 distinct months, top month share ≤ 40%) on a
+window that includes more than one regime episode.
