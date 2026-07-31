@@ -20,6 +20,10 @@
 // that's the only combination that clears a 0.5R expectancy bar in
 // backtesting (see data/crypto-signal-validation.md). Scoped to the
 // original 12-pair universe only.
+// (As of the 2026-07-31 Binance re-validation this tier is unreachable —
+// cup-forming is no longer in alertCryptoKinds, and its Binance
+// re-measurement 0.309R/7d vs 0.497R shipped failed the stability split.
+// Code kept for when/if it is re-enabled with fresh evidence.)
 
 const config = require('./config');
 const { sendMessage } = require('./telegram');
@@ -46,7 +50,9 @@ const { checkProtections } = require('./protections');
 // scoped to ONLY the original 12-pair validation universe: re-testing on 18
 // additional mid-cap pairs showed the edge weaken sharply there (0.095R,
 // 43% WR), so this tier must not silently extend if CRYPTO_WATCHLIST is
-// customized to a wider set.
+// customized to a wider set. 2026-07-31: rare tier currently unreachable
+// (cup-forming dropped from alertCryptoKinds after Binance re-validation);
+// this list is kept intact so re-enabling is a one-line config change.
 const CONFLUENCE_PARTNER_KINDS = ['ma-alignment', 'near-52w-high', 'volume-surge', 'cup-forming', 'bos-bullish'];
 
 function sleep(ms) {

@@ -70,7 +70,9 @@ everything else:
   control (0.199R vs 0.203R). **The stock side is now switched off entirely**;
   see "Stock alerts are off" below.
 - **`bos-bullish` (crypto)** — different result on crypto than stocks;
-  added to `alertCryptoKinds`.
+  added to `alertCryptoKinds` (removed from defaults 2026-07-31 after
+  Binance re-validation showed it flips negative in the recent half — see
+  config.js comment).
 - **`ob-bullish` on crypto is negative** despite being the stock star —
   deliberately not enabled there. Yet another reminder these don't
   transfer across asset classes.
@@ -188,7 +190,11 @@ SETUP, extended "hold up to 7 days" instruction) in `cryptoJob.js` instead
 of blending into the normal cup-forming alert. Deliberately scoped to only
 the original 12-pair crypto universe — expanding to 18 more mid-cap pairs
 was tested and the edge weakened sharply there, so this tier won't fire
-for a customized/wider `CRYPTO_WATCHLIST`.
+for a customized/wider `CRYPTO_WATCHLIST`. As of the 2026-07-31 Binance
+re-validation this tier is **not reachable at all**: `cup-forming` was
+dropped from `alertCryptoKinds` (it re-measured at 0.309R/7d vs the 0.497R
+above and failed the time-stability split), so the confluence special case
+can no longer trigger until cup-forming is re-enabled with fresh evidence.
 
 ## Crypto: hourly during waking hours, not just once a day
 

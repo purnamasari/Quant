@@ -82,9 +82,21 @@ module.exports = {
   // performer on stocks — tested NEGATIVE on crypto (-0.64%), so it's
   // deliberately NOT added here. Another reminder these don't transfer
   // across asset classes.
+  //
+  // UPDATE 2026-07-31 — Binance re-validation (after the OKX -> Binance
+  // USDⓈ-M swap) dropped cup-forming and bos-bullish from the defaults.
+  // cup-forming re-measured at -0.24% pooled / +0.02% bigcap cost-adjusted
+  // (0.25% round-trip) and FAILS the time-stability split: 0 occurrences in
+  // the most recent 365 days, i.e. its entire edge sat in the older bull
+  // year. Its rare-tier variant (cup-forming + confluence, R-multiple, RARE
+  // 9-pair universe) re-measured at 0.309R/7d vs the 0.497R that shipped on
+  // OKX, again with all trades in the older bull year. bos-bullish flips
+  // negative in the recent half (-0.47%) and is negative on midcap (-0.38%).
+  // The three that remain are stable in both halves and both cap tiers:
+  // ma-alignment +1.24%, near-52w-high +1.49%, volume-surge +1.73%.
   alertCryptoKinds: csv(process.env.ALERT_CRYPTO_KINDS).length
     ? csv(process.env.ALERT_CRYPTO_KINDS)
-    : ['ma-alignment', 'near-52w-high', 'volume-surge', 'cup-forming', 'bos-bullish'],
+    : ['ma-alignment', 'near-52w-high', 'volume-surge'],
   earningsGuardDays: Number(process.env.EARNINGS_GUARD_DAYS || 3),
   // Leveraged position sizing (see src/positionSizing.js). ACCOUNT_SIZE is
   // optional — without it alerts still show max safe leverage and the
