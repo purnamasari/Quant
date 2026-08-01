@@ -85,6 +85,7 @@
   nav button b { display: block; font-size: 16px; font-weight: 400; line-height: 1.3; }
   nav button[aria-selected="true"] { color: var(--accent); }
 </style>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
   <header>
@@ -161,7 +162,10 @@
     });
   }
   function gate() {
-    return '<div class="err">Sesi tidak valid, buka lewat Telegram.</div>' +
+    // Shown when initData is EMPTY (opened outside the Telegram webview).
+    // Distinct text from the 401 state on purpose — "sesi tidak valid" implies
+    // a forged/expired session, this is just "you are not in Telegram".
+    return '<div class="err">Buka lewat Telegram Mini App.</div>' +
       '<button class="btn" id="retry">Coba lagi</button>';
   }
   function fail(err) {
