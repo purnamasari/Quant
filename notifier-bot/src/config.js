@@ -39,6 +39,11 @@ module.exports = {
   // Default 'off' — the orchestrator flips this in a quiet window, not us.
   platformDelivery: process.env.PLATFORM_DELIVERY || 'off',
   platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL || 'http://localhost:8002',
+  // Sprint 2 "balik arah" (market-pulse/docs/IMPLEMENTATION-PLAN.md §3 task 3).
+  // '0' = no call at all (default); '1' = every recorded signal is mirrored to
+  // MP's /api/v1/ingest/signal. Writing-only: nothing about this flag changes
+  // what gets sent to Telegram, so a dual-run cannot double-notify (R5).
+  platformSignals: process.env.PLATFORM_SIGNALS || '0',
   // Market Pulse's internal-key bridge (app/auth/dependencies.py) — same
   // shared secret as MP's own INTERNAL_API_KEY, and the MP user id every
   // ingested alert is attributed to.

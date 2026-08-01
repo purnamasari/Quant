@@ -13,6 +13,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { mirrorSignal } = require('./platformSignal');
 
 const FILE = path.join(__dirname, '..', 'data', 'signal-feed.json');
 const RETENTION_DAYS = 90;
@@ -37,7 +38,7 @@ function save(rows) {
 // notification-policy decision.
 function recordSignal(entry) {
   const rows = load();
-  rows.push({
+  const row = {
     at: new Date().toISOString(),
     market: entry.market,
     symbol: entry.symbol,
@@ -55,10 +56,18 @@ function recordSignal(entry) {
     stopDistancePercent: entry.plan?.stopDistancePercent ?? null,
     holdDays: entry.plan?.holdDays ?? null,
     provisional: Boolean(entry.provisional),
-  });
+  };
+  rows.push(row);
 
   const cutoff = Date.now() - RETENTION_DAYS * 86_400_000;
   save(rows.filter((r) => new Date(r.at).getTime() >= cutoff));
+
+  // Sprint 2 "balik arah": the same row is mirrored into Market Pulse's
+  // append-only `signal_events`, so MP owns the fact rather than proxying
+  // :8787 to read it back. Fire-and-forget and flag-gated
+  // (PLATFORM_SIGNALS=0 by default) — the local JSON feed above stays the
+  // authority here until the 48h dual-run reconciles to zero difference.
+  mirrorSignal(row);
 }
 
 function recentSignals({ days = 7, notifiedOnly = false } = {}) {
