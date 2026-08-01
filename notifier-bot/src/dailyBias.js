@@ -24,6 +24,8 @@ const { atr } = require('./risk');
 const { ChartRenderer } = require('./chart');
 const { generateForecast } = require('./forecast/engine');
 const { djb2 } = require('./forecast/input');
+const { postAlert } = require('./platformAlert');
+const config = require('./config');
 
 const SYMBOL = 'BTCUSDT';
 
@@ -217,11 +219,31 @@ async function main() {
     }
     // Exactly one outbound message: an album when both charts rendered on
     // Monday, a single photo when only one did, plain text when none did.
-    if (monday && pngs.length === 2) await sendMediaGroup(pngs, text);
-    else if (pngs.length === 1) await sendPhoto(pngs[0], text);
-    else await sendMessage(text);
+    // Sprint 1 "satu mulut": in 'live' mode MP's platform bot sends the
+    // digest instead, so this bot's own push is skipped (no double-notify).
+    if (config.platformDelivery !== 'live') {
+      if (monday && pngs.length === 2) await sendMediaGroup(pngs, text);
+      else if (pngs.length === 1) await sendPhoto(pngs[0], text);
+      else await sendMessage(text);
+    }
 
-    console.log(`[dailyBias] sent — regime ${regime ?? 'unknown'}, 1D ${dStruct.bias ?? 'unknown'}, 4H ${fourHour.bias ?? 'unknown'}, chart ${monday ? '1D+4H (album)' : '4H'} ${pngs.length ? 'yes' : 'no'}`);
+    // First real alert through the new ingest path (docs/IMPLEMENTATION-PLAN.md
+    // §3 task 9) — 'shadow' posts alongside the legacy send above for the 48h
+    // reconciliation; 'live' is the operator's flip, done outside this bot.
+    if (config.platformDelivery === 'shadow' || config.platformDelivery === 'live') {
+      await postAlert({
+        type: 'daily_digest',
+        symbol: SYMBOL,
+        title: `Daily Bias BTC — ${wibDate()}`,
+        body: text,
+        severity: 'info',
+        dedupeKey: `daily-bias|${todayYmd()}`,
+        source: 'quant',
+        deliveryState: config.platformDelivery === 'shadow' ? 'suppressed' : undefined,
+      });
+    }
+
+    console.log(`[dailyBias] sent — regime ${regime ?? 'unknown'}, 1D ${dStruct.bias ?? 'unknown'}, 4H ${fourHour.bias ?? 'unknown'}, chart ${monday ? '1D+4H (album)' : '4H'} ${pngs.length ? 'yes' : 'no'}, platformDelivery ${config.platformDelivery}`);
   } catch (err) {
     console.error('[dailyBias] failed:', err.message);
     process.exit(1);

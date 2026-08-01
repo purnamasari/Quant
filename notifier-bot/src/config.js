@@ -31,6 +31,19 @@ module.exports = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
   telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
   telegramThreadId: process.env.TELEGRAM_THREAD_ID || '',
+  // Sprint 1 "satu mulut" (market-pulse/docs/IMPLEMENTATION-PLAN.md §3).
+  // off = current behaviour (this bot sends directly, nothing posted to MP).
+  // shadow = this bot keeps sending AND posts to MP with delivery_state
+  //   'suppressed' (dual-run, MP never sends — see R5 in the plan).
+  // live = this bot stops sending; MP's platform bot sends instead.
+  // Default 'off' — the orchestrator flips this in a quiet window, not us.
+  platformDelivery: process.env.PLATFORM_DELIVERY || 'off',
+  platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL || 'http://localhost:8002',
+  // Market Pulse's internal-key bridge (app/auth/dependencies.py) — same
+  // shared secret as MP's own INTERNAL_API_KEY, and the MP user id every
+  // ingested alert is attributed to.
+  platformInternalApiKey: process.env.PLATFORM_INTERNAL_API_KEY || '',
+  platformInternalUserId: process.env.PLATFORM_INTERNAL_USER_ID || '',
   // Telegram user IDs allowed to open the Mini App dashboard (comma-separated,
   // e.g. "1576755331,12345"). The dashboard verifies initData signatures, and
   // the owner check compares the signing user against THIS list. The legacy
